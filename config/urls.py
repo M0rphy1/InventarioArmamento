@@ -23,4 +23,7 @@ urlpatterns = [
     path("", include("apps.core.urls")),
 
     path("inventario/", include("apps.inventario.urls")),
+
+    path("usuarios/", include("apps.usuarios.urls")),
+    
 ]

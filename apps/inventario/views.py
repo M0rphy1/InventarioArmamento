@@ -6,8 +6,14 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.db import transaction
+from django.contrib.auth.decorators import login_required, user_passes_test
+
+def es_administrador(user):
+    return user.groups.filter(name="Administrador").exists()
 
 # Create your views here.
+@login_required
+@user_passes_test(es_administrador)
 def lista_ubicaciones(request):
 
     buscar = request.GET.get("buscar", "")
@@ -36,6 +42,8 @@ def lista_ubicaciones(request):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def crear_ubicacion(request):
 
     if request.method == "POST":
@@ -63,6 +71,8 @@ def crear_ubicacion(request):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def editar_ubicacion(request, pk):
 
     ubicacion = get_object_or_404(
@@ -103,6 +113,8 @@ def editar_ubicacion(request, pk):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def eliminar_ubicacion(request, pk):
 
     ubicacion = get_object_or_404(
@@ -130,6 +142,7 @@ def eliminar_ubicacion(request, pk):
         }
     )
 #Armamento
+@login_required
 def lista_armamentos(request):
 
     buscar = request.GET.get("buscar", "")
@@ -159,6 +172,8 @@ def lista_armamentos(request):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def crear_armamento(request):
 
     if request.method == "POST":
@@ -188,6 +203,8 @@ def crear_armamento(request):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def editar_armamento(request, pk):
 
     armamento = get_object_or_404(Armamento, pk=pk)
@@ -223,6 +240,8 @@ def editar_armamento(request, pk):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def eliminar_armamento(request, pk):
 
     armamento = get_object_or_404(
@@ -249,6 +268,8 @@ def eliminar_armamento(request, pk):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def lista_tipos(request):
 
     buscar = request.GET.get("buscar", "")
@@ -272,6 +293,8 @@ def lista_tipos(request):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def crear_tipo(request):
 
     if request.method == "POST":
@@ -297,6 +320,8 @@ def crear_tipo(request):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def editar_tipo(request, pk):
 
     tipo = get_object_or_404(TipoArmamento, pk=pk)
@@ -324,6 +349,8 @@ def editar_tipo(request, pk):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def eliminar_tipo(request, pk):
 
     tipo = get_object_or_404(TipoArmamento, pk=pk)
@@ -342,6 +369,8 @@ def eliminar_tipo(request, pk):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def lista_responsables(request):
 
     buscar = request.GET.get("buscar", "")
@@ -370,6 +399,8 @@ def lista_responsables(request):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def crear_responsable(request):
 
     if request.method == "POST":
@@ -395,6 +426,8 @@ def crear_responsable(request):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def editar_responsable(request, pk):
 
     responsable = get_object_or_404(Responsable, pk=pk)
@@ -422,6 +455,8 @@ def editar_responsable(request, pk):
         }
     )
 
+@login_required
+@user_passes_test(es_administrador)
 def eliminar_responsable(request, pk):
 
     responsable = get_object_or_404(Responsable, pk=pk)
@@ -440,6 +475,7 @@ def eliminar_responsable(request, pk):
         }
     )
 
+@login_required
 def lista_movimientos(request):
 
     movimientos = Movimiento.objects.select_related(
@@ -454,8 +490,6 @@ def lista_movimientos(request):
             "movimientos": movimientos
         }
     )
-
-from django.contrib.auth.decorators import login_required
 
 @login_required
 @transaction.atomic
@@ -486,7 +520,24 @@ def crear_movimiento(request):
             if movimiento.estado_nuevo:
                 armamento.estado = movimiento.estado_nuevo
 
-            armamento.save()
+            # Si el movimiento es BAJA,
+            # el armamento deja de estar activo.
+            if movimiento.tipo == "BAJA":
+                armamento.activo = False
+
+            # Si se devuelve,
+            # vuelve a estar activo.
+            elif movimiento.tipo == "DEVOLUCION":
+                armamento.activo = True
+
+            armamento.save(
+                update_fields=[
+                    "ubicacion",
+                    "responsable",
+                    "estado",
+                    "activo",
+                ]
+            )
 
             movimiento.save()
 

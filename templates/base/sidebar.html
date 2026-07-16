@@ -9,60 +9,44 @@
     <ul class="nav flex-column">
 
         <li class="nav-item mb-2">
-
             <a class="nav-link text-white" href="{% url 'dashboard' %}">
                 Dashboard
             </a>
-
         </li>
 
         <li class="nav-item mb-2">
-
             <a class="nav-link text-white" href="{% url 'lista_armamentos' %}">
                 Armamentos
             </a>
-
         </li>
 
         <li class="nav-item mb-2">
-
-            <a class="nav-link text-white" href="{% url 'lista_tipos' %}">
-                Tipos de Armamento
-            </a>
-
-        </li>
-
-        <li class="nav-item mb-2">
-
             <a class="nav-link text-white" href="{% url 'lista_movimientos' %}">
                 Movimientos
             </a>
-
         </li>
 
-        <li class="nav-item mb-2">
+        {% if request.user.groups.first.name == "Administrador" %}
 
-            <a class="nav-link text-white" href="#">
-                Mantenimientos
-            </a>
+            <li class="nav-item mb-2">
+                <a class="nav-link text-white" href="{% url 'lista_responsables' %}">
+                    Responsables
+                </a>
+            </li>
 
-        </li>
+            <li class="nav-item mb-2">
+                <a class="nav-link text-white" href="{% url 'lista_ubicaciones' %}">
+                    Ubicaciones
+                </a>
+            </li>
 
-        <li class="nav-item mb-2">
+            <li class="nav-item mb-2">
+                <a class="nav-link text-white" href="{% url 'lista_tipos' %}">
+                    Tipos de Armamento
+                </a>
+            </li>
 
-            <a class="nav-link text-white" href="{% url 'lista_responsables' %}">
-                Responsables
-            </a>
-
-        </li>
-
-        <li class="nav-item mb-2">
-
-            <a class="nav-link text-white" href="{% url 'lista_ubicaciones' %}">
-                Ubicaciones
-            </a>
-
-        </li>
+        {% endif %}
 
     </ul>
 

@@ -188,39 +188,117 @@ def clean(self):
     cleaned_data = super().clean()
 
     tipo = cleaned_data.get("tipo")
+    armamento = cleaned_data.get("armamento")
     ubicacion = cleaned_data.get("ubicacion_destino")
     responsable = cleaned_data.get("responsable_nuevo")
-    estado = cleaned_data.get("estado_nuevo")
 
-    if tipo == "CAMBIO_UBICACION" and not ubicacion:
-        self.add_error(
-            "ubicacion_destino",
-            "Debe seleccionar una ubicación."
-        )
+    # ===============================
+    # CAMBIO DE UBICACIÓN
+    # ===============================
 
-    if tipo == "CAMBIO_RESPONSABLE" and not responsable:
-        self.add_error(
-            "responsable_nuevo",
-            "Debe seleccionar un responsable."
-        )
+    if tipo == "CAMBIO_UBICACION":
 
-    if tipo == "PRESTAMO":
+        if not ubicacion:
+
+            self.add_error(
+                "ubicacion_destino",
+                "Debe seleccionar una ubicación."
+            )
+
+    # ===============================
+    # CAMBIO DE RESPONSABLE
+    # ===============================
+
+    if tipo == "CAMBIO_RESPONSABLE":
 
         if not responsable:
+
             self.add_error(
                 "responsable_nuevo",
                 "Debe seleccionar un responsable."
             )
 
+    # ===============================
+    # PRÉSTAMO
+    # ===============================
+
+    if tipo == "PRESTAMO":
+
+        if not responsable:
+
+            self.add_error(
+                "responsable_nuevo",
+                "Debe seleccionar un responsable."
+            )
+
+        if armamento:
+
+            if armamento.estado == "PRESTADO":
+
+                self.add_error(
+                    "armamento",
+                    "Este armamento ya se encuentra prestado."
+                )
+
+            elif armamento.estado == "MANTENIMIENTO":
+
+                self.add_error(
+                    "armamento",
+                    "El armamento está en mantenimiento."
+                )
+
+            elif armamento.estado == "BAJA":
+
+                self.add_error(
+                    "armamento",
+                    "El armamento se encuentra dado de baja."
+                )
+
         cleaned_data["estado_nuevo"] = "PRESTADO"
 
+    # ===============================
+    # DEVOLUCIÓN
+    # ===============================
+
     if tipo == "DEVOLUCION":
+
+        if armamento and armamento.estado != "PRESTADO":
+
+            self.add_error(
+                "armamento",
+                "Este armamento no se encuentra prestado."
+            )
+
         cleaned_data["estado_nuevo"] = "DISPONIBLE"
 
+    # ===============================
+    # MANTENIMIENTO
+    # ===============================
+
     if tipo == "MANTENIMIENTO":
+
+        if armamento and armamento.estado == "BAJA":
+
+            self.add_error(
+                "armamento",
+                "Un armamento dado de baja no puede entrar a mantenimiento."
+            )
+
         cleaned_data["estado_nuevo"] = "MANTENIMIENTO"
 
+    # ===============================
+    # BAJA
+    # ===============================
+
     if tipo == "BAJA":
+
+        if armamento and armamento.estado == "BAJA":
+
+            self.add_error(
+                "armamento",
+                "El armamento ya se encuentra dado de baja."
+            )
+
         cleaned_data["estado_nuevo"] = "BAJA"
 
     return cleaned_data
