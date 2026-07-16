@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+
+Eliminar Armamento
+
+{% endblock %}
+
+{% block contenido %}
+
+<div class="card shadow">
+
+    <div class="card-header bg-danger text-white">
+
+        <h3>
+
+            Confirmar eliminación
+
+        </h3>
+
+    </div>
+
+    <div class="card-body">
+
+        <p>
+
+            ¿Está seguro de eliminar el siguiente armamento?
+
+        </p>
+
+        <ul>
+
+            <li><strong>Código:</strong> {{ armamento.codigo }}</li>
+
+            <li><strong>Serie:</strong> {{ armamento.numero_serie }}</li>
+
+            <li><strong>Marca:</strong> {{ armamento.marca }}</li>
+
+            <li><strong>Modelo:</strong> {{ armamento.modelo }}</li>
+
+        </ul>
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <button class="btn btn-danger">
+
+                Sí, eliminar
+
+            </button>
+
+            <a
+                href="{% url 'lista_armamentos' %}"
+                class="btn btn-secondary">
+
+                Cancelar
+
+            </a>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

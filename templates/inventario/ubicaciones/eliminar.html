@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Confirmar eliminación
+{% endblock %}
+
+{% block contenido %}
+
+<div class="card shadow">
+
+    <div class="card-header bg-danger text-white">
+
+        <h4>Confirmar desactivación</h4>
+
+    </div>
+
+    <div class="card-body">
+
+        <p>
+
+            ¿Está seguro de que desea desactivar la ubicación:
+
+            <strong>{{ ubicacion.nombre }}</strong>?
+
+        </p>
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <button class="btn btn-danger">
+
+                Sí, desactivar
+
+            </button>
+
+            <a href="{% url 'lista_ubicaciones' %}" class="btn btn-secondary">
+
+                Cancelar
+
+            </a>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}
