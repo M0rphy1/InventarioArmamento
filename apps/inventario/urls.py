@@ -51,4 +51,71 @@ urlpatterns = [
         name="eliminar_armamento",
     ),
 
+    path(
+        "tipos/",
+        views.lista_tipos,
+        name="lista_tipos"
+    ),
+
+    path(
+        "tipos/nuevo/",
+        views.crear_tipo,
+        name="crear_tipo"
+    ),
+
+    path(
+        "tipos/<int:pk>/editar/",
+        views.editar_tipo,
+        name="editar_tipo"
+    ),
+
+    path(
+        "tipos/<int:pk>/eliminar/",
+        views.eliminar_tipo,
+        name="eliminar_tipo"
+    ),
+
+    path(
+        "responsables/",
+        views.lista_responsables,
+        name="lista_responsables"
+    ),
+
+    path(
+        "responsables/nuevo/",
+        views.crear_responsable,
+        name="crear_responsable"
+    ),
+
+    path(
+        "responsables/<int:pk>/editar/",
+        views.editar_responsable,
+        name="editar_responsable"
+    ),
+
+    path(
+        "responsables/<int:pk>/eliminar/",
+        views.eliminar_responsable,
+        name="eliminar_responsable"
+    ),
+
+    path(
+        "movimientos/",
+        views.lista_movimientos,
+        name="lista_movimientos"
+    ),
+
+    path(
+        "movimientos/nuevo/",
+        views.crear_movimiento,
+        name="crear_movimiento"
+    ),
+
+#PDF
+    path(
+        "reportes/armamentos/pdf/",
+        views.reporte_armamentos_pdf,
+        name="reporte_armamentos_pdf",
+    ),
+
 ]

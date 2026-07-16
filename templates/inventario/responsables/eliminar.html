@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Eliminar Responsable
+{% endblock %}
+
+{% block contenido %}
+
+<h2 class="mb-4">
+
+    Eliminar Responsable
+
+</h2>
+
+<p>
+
+    ¿Está seguro de eliminar al responsable:
+
+    <strong>
+
+        {{ responsable }}
+
+    </strong>?
+
+</p>
+
+<form method="POST">
+
+    {% csrf_token %}
+
+    <button class="btn btn-danger">
+
+        Sí, eliminar
+
+    </button>
+
+    <a
+        href="{% url 'lista_responsables' %}"
+        class="btn btn-secondary">
+
+        Cancelar
+
+    </a>
+
+</form>
+
+{% endblock %}

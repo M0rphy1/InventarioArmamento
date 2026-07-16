@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Tipos de Armamento
+{% endblock %}
+
+{% block contenido %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <h2>Tipos de Armamento</h2>
+
+    <a href="{% url 'crear_tipo' %}" class="btn btn-primary">
+        Nuevo Tipo
+    </a>
+
+</div>
+
+<form method="GET" class="row mb-3">
+
+    <div class="col-md-6">
+
+        <input
+            type="text"
+            name="buscar"
+            class="form-control"
+            placeholder="Buscar por nombre o descripción..."
+            value="{{ buscar }}">
+
+    </div>
+
+    <div class="col-md-2">
+
+        <button class="btn btn-primary">
+            Buscar
+        </button>
+
+    </div>
+
+</form>
+
+<table class="table table-striped table-bordered">
+
+    <thead>
+
+        <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th width="180">Acciones</th>
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+        {% for tipo in page_obj %}
+
+        <tr>
+
+            <td>{{ tipo.nombre }}</td>
+
+            <td>{{ tipo.descripcion }}</td>
+
+            <td>
+
+                <a
+                    href="{% url 'editar_tipo' tipo.id %}"
+                    class="btn btn-warning btn-sm">
+
+                    Editar
+
+                </a>
+
+                <a
+                    href="{% url 'eliminar_tipo' tipo.id %}"
+                    class="btn btn-danger btn-sm">
+
+                    Eliminar
+
+                </a>
+
+            </td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr>
+
+            <td colspan="3" class="text-center">
+                No existen tipos registrados.
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+<nav>
+
+    <ul class="pagination justify-content-center">
+
+        {% if page_obj.has_previous %}
+
+        <li class="page-item">
+
+            <a
+                class="page-link"
+                href="?page={{ page_obj.previous_page_number }}&buscar={{ buscar }}">
+
+                Anterior
+
+            </a>
+
+        </li>
+
+        {% endif %}
+
+        <li class="page-item active">
+
+            <span class="page-link">
+
+                {{ page_obj.number }}
+
+            </span>
+
+        </li>
+
+        {% if page_obj.has_next %}
+
+        <li class="page-item">
+
+            <a
+                class="page-link"
+                href="?page={{ page_obj.next_page_number }}&buscar={{ buscar }}">
+
+                Siguiente
+
+            </a>
+
+        </li>
+
+        {% endif %}
+
+    </ul>
+
+</nav>
+
+{% endblock %}

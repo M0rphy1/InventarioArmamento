@@ -112,6 +112,20 @@ class Responsable(models.Model):
 
     def __str__(self):
         return f"{self.get_grado_display()} {self.apellidos} {self.nombres}"
+
+    def clean(self):
+
+        if len(self.cedula) != 10:
+
+            raise ValidationError({
+                "cedula": "La cédula debe tener exactamente 10 dígitos."
+            })
+
+        if not self.cedula.isdigit():
+
+            raise ValidationError({
+                "cedula": "La cédula solo debe contener números."
+            })
 #Armamento
 class Armamento(models.Model):
 
@@ -274,6 +288,7 @@ class Movimiento(models.Model):
 
     estado_nuevo = models.CharField(
         max_length=20,
+        choices=Armamento.ESTADOS,
         blank=True,
         null=True
     )

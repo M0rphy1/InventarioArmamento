@@ -131,7 +131,6 @@ Dashboard
             <th>Fecha</th>
             <th>Armamento</th>
             <th>Tipo</th>
-            <th>Usuario</th>
 
         </tr>
 
@@ -139,7 +138,7 @@ Dashboard
 
     <tbody>
 
-    {% for movimiento in ultimos_movimientos %}
+    {% for movimiento in movimientos %}
 
         <tr>
 
@@ -148,8 +147,6 @@ Dashboard
             <td>{{ movimiento.armamento.codigo }}</td>
 
             <td>{{ movimiento.get_tipo_display }}</td>
-
-            <td>{{ movimiento.usuario }}</td>
 
         </tr>
 

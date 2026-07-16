@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Eliminar Tipo de Armamento
+{% endblock %}
+
+{% block contenido %}
+
+<h2 class="mb-4">
+
+    Eliminar Tipo de Armamento
+
+</h2>
+
+<p>
+
+    ¿Está seguro de eliminar el tipo
+    <strong>{{ objeto.nombre }}</strong>?
+
+</p>
+
+<form method="POST">
+
+    {% csrf_token %}
+
+    <button class="btn btn-danger">
+
+        Sí, eliminar
+
+    </button>
+
+    <a href="{% url 'lista_tipos' %}" class="btn btn-secondary">
+
+        Cancelar
+
+    </a>
+
+</form>
+
+{% endblock %}

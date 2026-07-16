@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from apps.inventario.models import Armamento, Movimiento
+from apps.inventario.models import Armamento, Movimiento, Responsable
 
 # Create your views here.
 def dashboard(request):
@@ -19,8 +19,17 @@ def dashboard(request):
     ).count()
 
     ultimos_movimientos = Movimiento.objects.select_related(
-        "armamento"
-    ).order_by("-fecha")[:5]
+        "armamento",
+        "usuario"
+    ).order_by("-fecha")[:10]
+
+    bajas = Armamento.objects.filter(
+        estado="BAJA"
+    ).count()
+
+    responsables = Responsable.objects.filter(
+        activo=True
+    ).count()
 
     context = {
         "total_armamentos": total_armamentos,
@@ -28,6 +37,8 @@ def dashboard(request):
         "prestados": prestados,
         "mantenimiento": mantenimiento,
         "ultimos_movimientos": ultimos_movimientos,
+        "bajas": bajas,
+        "responsables": responsables,
     }
 
     return render(request, "dashboard/dashboard.html", context)

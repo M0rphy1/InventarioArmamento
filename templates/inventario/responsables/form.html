@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+{{ titulo }}
+{% endblock %}
+
+{% block contenido %}
+
+<div class="card shadow">
+
+    <div class="card-header bg-primary text-white">
+
+        <h4 class="mb-0">{{ titulo }}</h4>
+
+    </div>
+
+    <div class="card-body">
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <div class="row">
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Grado
+                    </label>
+
+                    {{ form.grado }}
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Cédula
+                    </label>
+
+                    {{ form.cedula }}
+                    {{ form.cedula.errors }}
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Nombres
+                    </label>
+
+                    {{ form.nombres }}
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Apellidos
+                    </label>
+
+                    {{ form.apellidos }}
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Cargo
+                    </label>
+
+                    {{ form.cargo }}
+
+                </div>
+
+                <div class="col-md-6 mb-3 d-flex align-items-end">
+
+                    <div class="form-check">
+
+                        {{ form.activo }}
+
+                        <label class="form-check-label">
+
+                            Activo
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <hr>
+
+            <button class="btn btn-success">
+
+                Guardar
+
+            </button>
+
+            <a href="{% url 'lista_responsables' %}" class="btn btn-secondary">
+
+                Cancelar
+
+            </a>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}
