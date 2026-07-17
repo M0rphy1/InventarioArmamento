@@ -1,12 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento
-from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm
+from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm, FinalizarMantenimientoForm
 from django.contrib import messages
 
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.db import transaction
 from django.contrib.auth.decorators import login_required, user_passes_test
+from .utils import registrar_movimiento
 
 def es_administrador(user):
     return user.groups.filter(name="Administrador").exists()
@@ -591,24 +592,45 @@ def crear_mantenimiento(request):
 
             mantenimiento = form.save(commit=False)
 
-            if (
-                mantenimiento.estado == "FINALIZADO"
-                and not mantenimiento.fecha_salida
-            ):
-                from django.utils import timezone
-                mantenimiento.fecha_salida = timezone.now().date()
+            # Todo mantenimiento nuevo inicia en proceso
+            mantenimiento.estado = "EN_PROCESO"
 
             armamento = mantenimiento.armamento
 
-            if mantenimiento.estado == "EN_PROCESO":
+            # Guardamos los datos anteriores
+            estado_anterior = armamento.estado
+            ubicacion_anterior = armamento.ubicacion
+            responsable_anterior = armamento.responsable
 
-                armamento.estado = "MANTENIMIENTO"
+            # Enviar automáticamente al taller
+            taller = Ubicacion.objects.get(es_taller=True)
 
-            elif mantenimiento.estado == "FINALIZADO":
-
-                armamento.estado = "DISPONIBLE"
+            armamento.estado = "MANTENIMIENTO"
+            armamento.ubicacion = taller
 
             armamento.save()
+            mantenimiento.save()
+
+            # Registrar movimiento
+            registrar_movimiento(
+
+                armamento=armamento,
+
+                tipo="MANTENIMIENTO",
+
+                usuario=request.user,
+
+                ubicacion_origen=ubicacion_anterior,
+                ubicacion_destino=taller,
+
+                responsable_anterior=responsable_anterior,
+                responsable_nuevo=responsable_anterior,
+
+                estado_anterior=estado_anterior,
+                estado_nuevo="MANTENIMIENTO",
+
+                observacion="Armamento enviado al taller de mantenimiento."
+            )
 
             return redirect("lista_mantenimientos")
 
@@ -636,7 +658,7 @@ def editar_mantenimiento(request, pk):
 
     if request.method == "POST":
 
-        form = MantenimientoForm(
+        form = FinalizarMantenimientoForm(
             request.POST,
             instance=mantenimiento
         )
@@ -645,6 +667,14 @@ def editar_mantenimiento(request, pk):
 
             mantenimiento = form.save(commit=False)
 
+            armamento = mantenimiento.armamento
+
+            # Datos anteriores
+            estado_anterior = armamento.estado
+            ubicacion_anterior = armamento.ubicacion
+            responsable_anterior = armamento.responsable
+
+            # Si finaliza y no tiene fecha de salida
             if (
                 mantenimiento.estado == "FINALIZADO"
                 and not mantenimiento.fecha_salida
@@ -652,25 +682,57 @@ def editar_mantenimiento(request, pk):
                 from django.utils import timezone
                 mantenimiento.fecha_salida = timezone.now().date()
 
-            mantenimiento = form.save()
-
-            armamento = mantenimiento.armamento
-
-            if mantenimiento.estado == "EN_PROCESO":
-
-                armamento.estado = "MANTENIMIENTO"
-
-            elif mantenimiento.estado == "FINALIZADO":
+            # Cambios al armamento
+            if mantenimiento.estado == "FINALIZADO":
 
                 armamento.estado = "DISPONIBLE"
 
+                if mantenimiento.ubicacion_destino:
+                    armamento.ubicacion = mantenimiento.ubicacion_destino
+
+                if mantenimiento.responsable_destino:
+                    armamento.responsable = mantenimiento.responsable_destino
+
+            elif mantenimiento.estado == "EN_PROCESO":
+
+                taller = Ubicacion.objects.get(es_taller=True)
+
+                armamento.estado = "MANTENIMIENTO"
+                armamento.ubicacion = taller
+
             armamento.save()
+            mantenimiento.save()
+
+            # Registrar movimiento
+            registrar_movimiento(
+
+                armamento=armamento,
+
+                tipo="MANTENIMIENTO",
+
+                usuario=request.user,
+
+                ubicacion_origen=ubicacion_anterior,
+                ubicacion_destino=armamento.ubicacion,
+
+                responsable_anterior=responsable_anterior,
+                responsable_nuevo=armamento.responsable,
+
+                estado_anterior=estado_anterior,
+                estado_nuevo=armamento.estado,
+
+                observacion=(
+                    "Mantenimiento finalizado."
+                    if mantenimiento.estado == "FINALIZADO"
+                    else "Mantenimiento actualizado."
+                )
+            )
 
             return redirect("lista_mantenimientos")
 
     else:
 
-        form = MantenimientoForm(
+        form = FinalizarMantenimientoForm(
             instance=mantenimiento
         )
 

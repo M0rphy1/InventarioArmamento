@@ -116,23 +116,17 @@ Dashboard
 
 </div>
 
-<h4 class="mt-4">
-
-    Últimos Movimientos
-
-</h4>
+<h4 class="mt-4">Últimos Movimientos</h4>
 
 <table class="table table-striped">
 
     <thead>
 
         <tr>
-
             <th>Fecha</th>
             <th>Armamento</th>
-            <th>Tipo</th>
             <th>Usuario</th>
-
+            <th>Acción</th>
         </tr>
 
     </thead>
@@ -147,9 +141,9 @@ Dashboard
 
             <td>{{ movimiento.armamento.codigo }}</td>
 
-            <td>{{ movimiento.get_tipo_display }}</td>
-
             <td>{{ movimiento.usuario }}</td>
+
+            <td>{{ movimiento.observacion|default:movimiento.get_tipo_display }}</td>
 
         </tr>
 
@@ -157,7 +151,7 @@ Dashboard
 
         <tr>
 
-            <td colspan="3">
+            <td colspan="4">
 
                 No existen movimientos registrados.
 

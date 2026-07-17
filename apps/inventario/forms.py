@@ -150,7 +150,6 @@ class MovimientoForm(forms.ModelForm):
             "tipo",
             "ubicacion_destino",
             "responsable_nuevo",
-            "estado_nuevo",
             "observacion",
         ]
 
@@ -172,10 +171,6 @@ class MovimientoForm(forms.ModelForm):
                 "class": "form-select"
             }),
 
-            "estado_nuevo": forms.Select(attrs={
-                "class": "form-select"
-            }),
-
             "observacion": forms.Textarea(attrs={
                 "class": "form-control",
                 "rows": 4
@@ -183,137 +178,136 @@ class MovimientoForm(forms.ModelForm):
 
         }
 
-def clean(self):
+    def __init__(self, *args, **kwargs):
 
-    cleaned_data = super().clean()
+        super().__init__(*args, **kwargs)
 
-    tipo = cleaned_data.get("tipo")
-    armamento = cleaned_data.get("armamento")
-    ubicacion = cleaned_data.get("ubicacion_destino")
-    responsable = cleaned_data.get("responsable_nuevo")
+        self.fields["tipo"].choices = [
+            ("INGRESO", "Ingreso"),
+            ("SALIDA", "Salida"),
+            ("PRESTAMO", "Préstamo"),
+            ("DEVOLUCION", "Devolución"),
+            ("CAMBIO_UBICACION", "Cambio de ubicación"),
+            ("CAMBIO_RESPONSABLE", "Cambio de responsable"),
+            ("BAJA", "Baja"),
+        ]
 
-    # ===============================
-    # CAMBIO DE UBICACIÓN
-    # ===============================
+    def clean(self):
 
-    if tipo == "CAMBIO_UBICACION":
+        cleaned_data = super().clean()
 
-        if not ubicacion:
+        tipo = cleaned_data.get("tipo")
+        armamento = cleaned_data.get("armamento")
+        ubicacion = cleaned_data.get("ubicacion_destino")
+        responsable = cleaned_data.get("responsable_nuevo")
 
-            self.add_error(
-                "ubicacion_destino",
-                "Debe seleccionar una ubicación."
-            )
+        # ===============================
+        # CAMBIO DE UBICACIÓN
+        # ===============================
 
-    # ===============================
-    # CAMBIO DE RESPONSABLE
-    # ===============================
+        if tipo == "CAMBIO_UBICACION":
 
-    if tipo == "CAMBIO_RESPONSABLE":
+            if not ubicacion:
 
-        if not responsable:
+                self.add_error(
+                    "ubicacion_destino",
+                    "Debe seleccionar una ubicación."
+                )
 
-            self.add_error(
-                "responsable_nuevo",
-                "Debe seleccionar un responsable."
-            )
+        # ===============================
+        # CAMBIO DE RESPONSABLE
+        # ===============================
 
-    # ===============================
-    # PRÉSTAMO
-    # ===============================
+        if tipo == "CAMBIO_RESPONSABLE":
 
-    if tipo == "PRESTAMO":
+            if not responsable:
 
-        if not responsable:
+                self.add_error(
+                    "responsable_nuevo",
+                    "Debe seleccionar un responsable."
+                )
 
-            self.add_error(
-                "responsable_nuevo",
-                "Debe seleccionar un responsable."
-            )
+        # ===============================
+        # PRÉSTAMO
+        # ===============================
 
-        if armamento:
+        if tipo == "PRESTAMO":
 
-            if armamento.estado == "PRESTADO":
+            if not responsable:
+
+                self.add_error(
+                    "responsable_nuevo",
+                    "Debe seleccionar un responsable."
+                )
+
+            if armamento:
+
+                if armamento.estado == "PRESTADO":
+
+                    self.add_error(
+                        "armamento",
+                        "Este armamento ya se encuentra prestado."
+                    )
+
+                elif armamento.estado == "MANTENIMIENTO":
+
+                    self.add_error(
+                        "armamento",
+                        "El armamento está en mantenimiento."
+                    )
+
+                elif armamento.estado == "BAJA":
+
+                    self.add_error(
+                        "armamento",
+                        "El armamento se encuentra dado de baja."
+                    )
+
+            cleaned_data["estado_nuevo"] = "PRESTADO"
+
+        # ===============================
+        # DEVOLUCIÓN
+        # ===============================
+
+        if tipo == "DEVOLUCION":
+
+            if armamento and armamento.estado != "PRESTADO":
 
                 self.add_error(
                     "armamento",
-                    "Este armamento ya se encuentra prestado."
+                    "Este armamento no se encuentra prestado."
                 )
 
-            elif armamento.estado == "MANTENIMIENTO":
+            cleaned_data["estado_nuevo"] = "DISPONIBLE"
+
+        # ===============================
+        # BAJA
+        # ===============================
+
+        if tipo == "BAJA":
+
+            if armamento and armamento.estado == "BAJA":
 
                 self.add_error(
                     "armamento",
-                    "El armamento está en mantenimiento."
+                    "El armamento ya se encuentra dado de baja."
                 )
 
-            elif armamento.estado == "BAJA":
+            cleaned_data["estado_nuevo"] = "BAJA"
 
-                self.add_error(
-                    "armamento",
-                    "El armamento se encuentra dado de baja."
-                )
-
-        cleaned_data["estado_nuevo"] = "PRESTADO"
-
-    # ===============================
-    # DEVOLUCIÓN
-    # ===============================
-
-    if tipo == "DEVOLUCION":
-
-        if armamento and armamento.estado != "PRESTADO":
-
-            self.add_error(
-                "armamento",
-                "Este armamento no se encuentra prestado."
-            )
-
-        cleaned_data["estado_nuevo"] = "DISPONIBLE"
-
-    # ===============================
-    # MANTENIMIENTO
-    # ===============================
-
-    if tipo == "MANTENIMIENTO":
-
-        if armamento and armamento.estado == "BAJA":
-
-            self.add_error(
-                "armamento",
-                "Un armamento dado de baja no puede entrar a mantenimiento."
-            )
-
-        cleaned_data["estado_nuevo"] = "MANTENIMIENTO"
-
-    # ===============================
-    # BAJA
-    # ===============================
-
-    if tipo == "BAJA":
-
-        if armamento and armamento.estado == "BAJA":
-
-            self.add_error(
-                "armamento",
-                "El armamento ya se encuentra dado de baja."
-            )
-
-        cleaned_data["estado_nuevo"] = "BAJA"
-
-    return cleaned_data
+        return cleaned_data
 
 class MantenimientoForm(forms.ModelForm):
 
     class Meta:
+
         model = Mantenimiento
 
         fields = [
             "armamento",
             "fecha_ingreso",
-            "fecha_salida",
+            "motivo",
             "descripcion",
-            "estado",
             "tecnico",
         ]
 
@@ -328,9 +322,8 @@ class MantenimientoForm(forms.ModelForm):
                 "type": "date"
             }),
 
-            "fecha_salida": forms.DateInput(attrs={
-                "class": "form-control",
-                "type": "date"
+            "motivo": forms.TextInput(attrs={
+                "class": "form-control"
             }),
 
             "descripcion": forms.Textarea(attrs={
@@ -338,11 +331,61 @@ class MantenimientoForm(forms.ModelForm):
                 "rows": 4
             }),
 
+            "tecnico": forms.TextInput(attrs={
+                "class": "form-control"
+            }),
+
+        }
+
+class FinalizarMantenimientoForm(forms.ModelForm):
+
+    class Meta:
+
+        model = Mantenimiento
+
+        fields = [
+            "estado",
+            "fecha_salida",
+            "ubicacion_destino",
+            "responsable_destino",
+            "descripcion",
+            "tecnico",
+        ]
+
+        widgets = {
+
             "estado": forms.Select(attrs={
                 "class": "form-select"
+            }),
+
+            "fecha_salida": forms.DateInput(attrs={
+                "class": "form-control",
+                "type": "date"
+            }),
+
+            "ubicacion_destino": forms.Select(attrs={
+                "class": "form-select"
+            }),
+
+            "responsable_destino": forms.Select(attrs={
+                "class": "form-select"
+            }),
+
+            "descripcion": forms.Textarea(attrs={
+                "class": "form-control",
+                "rows": 4
             }),
 
             "tecnico": forms.TextInput(attrs={
                 "class": "form-control"
             }),
+
         }
+
+def __init__(self, *args, **kwargs):
+
+    super().__init__(*args, **kwargs)
+
+    self.fields["estado"].choices = [
+        ("FINALIZADO", "Finalizado")
+    ]

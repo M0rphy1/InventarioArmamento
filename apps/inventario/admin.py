@@ -10,7 +10,7 @@ class TipoArmamentoAdmin(admin.ModelAdmin):
 #Ubicacion
 @admin.register(Ubicacion)
 class UbicacionAdmin(admin.ModelAdmin):
-    list_display = ("id", "nombre")
+    list_display = ("id", "es_taller", "nombre")
     search_fields = ("nombre",)
     ordering = ("nombre",)
 #Responsable

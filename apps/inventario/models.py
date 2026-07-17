@@ -54,6 +54,11 @@ class Ubicacion(models.Model):
         default=True
     )
 
+    es_taller = models.BooleanField(
+        default=False,
+        verbose_name="Es taller de mantenimiento"
+    )
+
     class Meta:
         verbose_name = "Ubicación"
         verbose_name_plural = "Ubicaciones"
@@ -352,6 +357,22 @@ class Mantenimiento(models.Model):
 
     tecnico = models.CharField(
         max_length=150
+    )
+
+    ubicacion_destino = models.ForeignKey(
+        Ubicacion,
+        on_delete=models.PROTECT,
+        related_name="mantenimientos_destino",
+        null=True,
+        blank=True
+    )
+
+    responsable_destino = models.ForeignKey(
+        Responsable,
+        on_delete=models.PROTECT,
+        related_name="mantenimientos_responsable",
+        null=True,
+        blank=True
     )
 
     class Meta:

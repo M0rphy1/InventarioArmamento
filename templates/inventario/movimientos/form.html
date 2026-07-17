@@ -20,20 +20,38 @@
 
             {% csrf_token %}
 
-            {{ form.as_p }}
+            <div class="mb-3">
+                <label class="form-label">Armamento</label>
+                {{ form.armamento }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Tipo de movimiento</label>
+                {{ form.tipo }}
+            </div>
+
+            <div class="mb-3" id="div_ubicacion">
+                <label class="form-label">Ubicación destino</label>
+                {{ form.ubicacion_destino }}
+            </div>
+
+            <div class="mb-3" id="div_responsable">
+                <label class="form-label">Responsable nuevo</label>
+                {{ form.responsable_nuevo }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Observación</label>
+                {{ form.observacion }}
+            </div>
 
             <button class="btn btn-success">
-
                 Guardar
-
             </button>
 
-            <a
-                href="{% url 'lista_movimientos' %}"
-                class="btn btn-secondary">
-
+            <a href="{% url 'lista_movimientos' %}"
+            class="btn btn-secondary">
                 Cancelar
-
             </a>
 
         </form>
@@ -41,5 +59,50 @@
     </div>
 
 </div>
+<script>
+
+function actualizarFormulario() {
+
+    const tipo = document.getElementById("id_tipo").value;
+
+    document.getElementById("div_ubicacion").style.display = "none";
+    document.getElementById("div_responsable").style.display = "none";
+
+    switch(tipo){
+
+        case "CAMBIO_UBICACION":
+            document.getElementById("div_ubicacion").style.display = "block";
+            break;
+
+        case "CAMBIO_RESPONSABLE":
+            document.getElementById("div_responsable").style.display = "block";
+            break;
+
+        case "PRESTAMO":
+            document.getElementById("div_responsable").style.display = "block";
+            break;
+
+        case "DEVOLUCION":
+            break;
+
+        case "BAJA":
+            break;
+
+    }
+
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+
+    actualizarFormulario();
+
+    document.getElementById("id_tipo").addEventListener(
+        "change",
+        actualizarFormulario
+    );
+
+});
+
+</script>
 
 {% endblock %}
