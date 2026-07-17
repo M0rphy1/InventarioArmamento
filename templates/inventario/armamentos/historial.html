@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Historial del Armamento
+{% endblock %}
+
+{% block contenido %}
+
+<div class="card shadow">
+
+    <div class="card-header bg-primary text-white">
+
+        <h4>
+            Historial del Armamento
+        </h4>
+
+    </div>
+
+    <div class="card-body">
+
+        <h5>Información General</h5>
+
+        <table class="table table-bordered">
+
+            <tr>
+                <th>Código</th>
+                <td>{{ armamento.codigo }}</td>
+            </tr>
+
+            <tr>
+                <th>Serie</th>
+                <td>{{ armamento.numero_serie }}</td>
+            </tr>
+
+            <tr>
+                <th>Tipo</th>
+                <td>{{ armamento.tipo }}</td>
+            </tr>
+
+            <tr>
+                <th>Estado</th>
+                <td>{{ armamento.get_estado_display }}</td>
+            </tr>
+
+            <tr>
+                <th>Ubicación</th>
+                <td>{{ armamento.ubicacion }}</td>
+            </tr>
+
+            <tr>
+                <th>Responsable</th>
+                <td>{{ armamento.responsable }}</td>
+            </tr>
+
+        </table>
+
+        <hr>
+
+            <h5 class="mt-4">
+                Historial de Movimientos
+            </h5>
+
+            <div class="table-responsive">
+
+            <table class="table table-bordered table-hover">
+
+                <thead class="table-dark">
+
+                    <tr>
+
+                        <th>Fecha</th>
+                        <th>Movimiento</th>
+                        <th>Ubicación</th>
+                        <th>Responsable</th>
+                        <th>Estado</th>
+                        <th>Usuario</th>
+                        <th>Observación</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                {% for movimiento in movimientos %}
+
+                    <tr>
+
+                        <td>
+
+                            {{ movimiento.fecha|date:"d/m/Y H:i" }}
+
+                        </td>
+
+                        <td>
+
+                            {{ movimiento.get_tipo_display }}
+
+                        </td>
+
+                        <td>
+
+                            {% if movimiento.ubicacion_origen %}
+                                <strong>De:</strong>
+                                {{ movimiento.ubicacion_origen }}
+                                <br>
+                            {% endif %}
+
+                            {% if movimiento.ubicacion_destino %}
+                                <strong>A:</strong>
+                                {{ movimiento.ubicacion_destino }}
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            {% if movimiento.responsable_anterior %}
+                                <strong>Antes:</strong>
+                                {{ movimiento.responsable_anterior }}
+                                <br>
+                            {% endif %}
+
+                            {% if movimiento.responsable_nuevo %}
+                                <strong>Ahora:</strong>
+                                {{ movimiento.responsable_nuevo }}
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            {% if movimiento.estado_anterior %}
+                                <strong>Antes:</strong>
+                                {{ movimiento.estado_anterior }}
+                                <br>
+                            {% endif %}
+
+                            {% if movimiento.estado_nuevo %}
+                                <strong>Ahora:</strong>
+                                {{ movimiento.estado_nuevo }}
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            {{ movimiento.usuario }}
+
+                        </td>
+
+                        <td>
+
+                            {{ movimiento.observacion|default:"-" }}
+
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+
+                        <td colspan="7" class="text-center">
+
+                            No existen movimientos registrados.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+            </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

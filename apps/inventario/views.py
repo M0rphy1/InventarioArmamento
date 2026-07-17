@@ -174,6 +174,35 @@ def lista_armamentos(request):
     )
 
 @login_required
+def historial_armamento(request, pk):
+
+    armamento = get_object_or_404(
+        Armamento,
+        pk=pk
+    )
+
+    movimientos = (
+        Movimiento.objects.select_related(
+            "usuario",
+            "ubicacion_origen",
+            "ubicacion_destino",
+            "responsable_anterior",
+            "responsable_nuevo",
+        )
+        .filter(armamento=armamento)
+        .order_by("-fecha")
+    )
+
+    return render(
+        request,
+        "inventario/armamentos/historial.html",
+        {
+            "armamento": armamento,
+            "movimientos": movimientos,
+        }
+    )
+
+@login_required
 @user_passes_test(es_administrador)
 def crear_armamento(request):
 

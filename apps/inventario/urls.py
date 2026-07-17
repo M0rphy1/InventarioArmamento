@@ -34,6 +34,12 @@ urlpatterns = [
     ),
 
     path(
+        "armamentos/<int:pk>/historial/",
+        views.historial_armamento,
+        name="historial_armamento",
+    ),
+
+    path(
         "armamentos/nuevo/",
         views.crear_armamento,
         name="crear_armamento",
