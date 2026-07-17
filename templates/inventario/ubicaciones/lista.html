@@ -74,14 +74,15 @@ Ubicaciones
                     Editar
 
                 </a>
+                
+                {% if request.user.groups.first.name == "Administrador" %}
 
-                <a
-                    href="{% url 'eliminar_ubicacion' ubicacion.id %}"
-                    class="btn btn-danger btn-sm">
-
+                <a href="{% url 'eliminar_ubicacion' ubicacion.id %}"
+                class="btn btn-danger btn-sm">
                     Eliminar
-
                 </a>
+
+                {% endif %}
 
             </td>
 

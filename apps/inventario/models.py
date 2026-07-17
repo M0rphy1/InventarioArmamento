@@ -329,14 +329,20 @@ class Mantenimiento(models.Model):
         related_name="mantenimientos"
     )
 
-    fecha_inicio = models.DateField()
+    fecha_ingreso = models.DateField()
 
-    fecha_fin = models.DateField(
+    fecha_salida = models.DateField(
         null=True,
         blank=True
     )
 
     descripcion = models.TextField()
+
+    motivo = models.CharField(
+        max_length=200,
+        blank=True,
+        default=""
+    )
 
     estado = models.CharField(
         max_length=20,
@@ -351,7 +357,7 @@ class Mantenimiento(models.Model):
     class Meta:
         verbose_name = "Mantenimiento"
         verbose_name_plural = "Mantenimientos"
-        ordering = ["-fecha_inicio"]
+        ordering = ["-fecha_ingreso"]
 
     def __str__(self):
         return f"{self.armamento.codigo} - {self.estado}"

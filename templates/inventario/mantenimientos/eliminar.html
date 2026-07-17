@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Eliminar Mantenimiento
+{% endblock %}
+
+{% block contenido %}
+
+<h3>
+
+    ¿Eliminar este mantenimiento?
+
+</h3>
+
+<p>
+
+    {{ mantenimiento.armamento.codigo }}
+
+</p>
+
+<form method="POST">
+
+    {% csrf_token %}
+
+    <button
+        class="btn btn-danger">
+
+        Eliminar
+
+    </button>
+
+    <a
+        href="{% url 'lista_mantenimientos' %}"
+        class="btn btn-secondary">
+
+        Cancelar
+
+    </a>
+
+</form>
+
+{% endblock %}

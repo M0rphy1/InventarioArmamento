@@ -1,13 +1,9 @@
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from apps.inventario.models import Armamento, Movimiento, Responsable
-
-def es_administrador(user):
-    return user.groups.filter(name="Administrador").exists()
 
 # Create your views here.
 @login_required
-@user_passes_test(es_administrador)
 def dashboard(request):
 
     total_armamentos = Armamento.objects.count()

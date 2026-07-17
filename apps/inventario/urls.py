@@ -118,4 +118,29 @@ urlpatterns = [
         name="reporte_armamentos_pdf",
     ),
 
+#mantenimiento
+    path(
+        "mantenimientos/",
+        views.lista_mantenimientos,
+        name="lista_mantenimientos"
+    ),
+
+    path(
+        "mantenimientos/nuevo/",
+        views.crear_mantenimiento,
+        name="crear_mantenimiento"
+    ),
+
+    path(
+        "mantenimientos/<int:pk>/editar/",
+        views.editar_mantenimiento,
+        name="editar_mantenimiento"
+    ),
+
+    path(
+        "mantenimientos/<int:pk>/eliminar/",
+        views.eliminar_mantenimiento,
+        name="eliminar_mantenimiento"
+    ),
+
 ]

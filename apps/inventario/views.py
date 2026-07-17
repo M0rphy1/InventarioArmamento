@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento
-from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm
+from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento
+from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm
 from django.contrib import messages
 
 from django.core.paginator import Paginator
@@ -563,3 +563,144 @@ from .reportes.armamentos_pdf import generar_reporte_armamentos_pdf
 def reporte_armamentos_pdf(request):
     return generar_reporte_armamentos_pdf(request)
 
+#Mantenimiento
+@login_required
+def lista_mantenimientos(request):
+
+    mantenimientos = Mantenimiento.objects.select_related(
+        "armamento"
+    ).order_by("-fecha_ingreso")
+
+    return render(
+        request,
+        "inventario/mantenimientos/lista.html",
+        {
+            "mantenimientos": mantenimientos
+        }
+    )
+
+@login_required
+@transaction.atomic
+def crear_mantenimiento(request):
+
+    if request.method == "POST":
+
+        form = MantenimientoForm(request.POST)
+
+        if form.is_valid():
+
+            mantenimiento = form.save(commit=False)
+
+            if (
+                mantenimiento.estado == "FINALIZADO"
+                and not mantenimiento.fecha_salida
+            ):
+                from django.utils import timezone
+                mantenimiento.fecha_salida = timezone.now().date()
+
+            armamento = mantenimiento.armamento
+
+            if mantenimiento.estado == "EN_PROCESO":
+
+                armamento.estado = "MANTENIMIENTO"
+
+            elif mantenimiento.estado == "FINALIZADO":
+
+                armamento.estado = "DISPONIBLE"
+
+            armamento.save()
+
+            return redirect("lista_mantenimientos")
+
+    else:
+
+        form = MantenimientoForm()
+
+    return render(
+        request,
+        "inventario/mantenimientos/form.html",
+        {
+            "form": form,
+            "titulo": "Registrar Mantenimiento"
+        }
+    )
+
+@login_required
+@transaction.atomic
+def editar_mantenimiento(request, pk):
+
+    mantenimiento = get_object_or_404(
+        Mantenimiento,
+        pk=pk
+    )
+
+    if request.method == "POST":
+
+        form = MantenimientoForm(
+            request.POST,
+            instance=mantenimiento
+        )
+
+        if form.is_valid():
+
+            mantenimiento = form.save(commit=False)
+
+            if (
+                mantenimiento.estado == "FINALIZADO"
+                and not mantenimiento.fecha_salida
+            ):
+                from django.utils import timezone
+                mantenimiento.fecha_salida = timezone.now().date()
+
+            mantenimiento = form.save()
+
+            armamento = mantenimiento.armamento
+
+            if mantenimiento.estado == "EN_PROCESO":
+
+                armamento.estado = "MANTENIMIENTO"
+
+            elif mantenimiento.estado == "FINALIZADO":
+
+                armamento.estado = "DISPONIBLE"
+
+            armamento.save()
+
+            return redirect("lista_mantenimientos")
+
+    else:
+
+        form = MantenimientoForm(
+            instance=mantenimiento
+        )
+
+    return render(
+        request,
+        "inventario/mantenimientos/form.html",
+        {
+            "form": form,
+            "titulo": "Editar Mantenimiento"
+        }
+    )
+
+@login_required
+def eliminar_mantenimiento(request, pk):
+
+    mantenimiento = get_object_or_404(
+        Mantenimiento,
+        pk=pk
+    )
+
+    if request.method == "POST":
+
+        mantenimiento.delete()
+
+        return redirect("lista_mantenimientos")
+
+    return render(
+        request,
+        "inventario/mantenimientos/eliminar.html",
+        {
+            "mantenimiento": mantenimiento
+        }
+    )

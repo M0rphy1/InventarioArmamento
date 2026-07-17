@@ -1,5 +1,5 @@
 from django import forms
-from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento
+from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento
 
 
 class UbicacionForm(forms.ModelForm):
@@ -302,3 +302,47 @@ def clean(self):
         cleaned_data["estado_nuevo"] = "BAJA"
 
     return cleaned_data
+
+class MantenimientoForm(forms.ModelForm):
+
+    class Meta:
+        model = Mantenimiento
+
+        fields = [
+            "armamento",
+            "fecha_ingreso",
+            "fecha_salida",
+            "descripcion",
+            "estado",
+            "tecnico",
+        ]
+
+        widgets = {
+
+            "armamento": forms.Select(attrs={
+                "class": "form-select"
+            }),
+
+            "fecha_ingreso": forms.DateInput(attrs={
+                "class": "form-control",
+                "type": "date"
+            }),
+
+            "fecha_salida": forms.DateInput(attrs={
+                "class": "form-control",
+                "type": "date"
+            }),
+
+            "descripcion": forms.Textarea(attrs={
+                "class": "form-control",
+                "rows": 4
+            }),
+
+            "estado": forms.Select(attrs={
+                "class": "form-select"
+            }),
+
+            "tecnico": forms.TextInput(attrs={
+                "class": "form-control"
+            }),
+        }

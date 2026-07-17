@@ -70,14 +70,15 @@ Tipos de Armamento
                     Editar
 
                 </a>
+                
+                {% if request.user.groups.first.name == "Administrador" %}
 
-                <a
-                    href="{% url 'eliminar_tipo' tipo.id %}"
-                    class="btn btn-danger btn-sm">
-
+                <a href="{% url 'eliminar_tipo' tipo.id %}"
+                class="btn btn-danger btn-sm">
                     Eliminar
-
                 </a>
+
+                {% endif %}
 
             </td>
 

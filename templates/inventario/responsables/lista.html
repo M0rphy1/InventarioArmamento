@@ -87,13 +87,14 @@ Responsables
 
                 </a>
 
-                <a
-                    href="{% url 'eliminar_responsable' responsable.id %}"
-                    class="btn btn-danger btn-sm">
+                {% if request.user.groups.first.name == "Administrador" %}
 
+                <a href="{% url 'eliminar_responsable' responsable.id %}"
+                class="btn btn-danger btn-sm">
                     Eliminar
-
                 </a>
+
+                {% endif %}
 
             </td>
 

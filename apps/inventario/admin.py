@@ -87,19 +87,21 @@ class MovimientoAdmin(admin.ModelAdmin):
     readonly_fields = (
         "fecha",
     )
-#Mantenimiento
+# Mantenimiento
 @admin.register(Mantenimiento)
 class MantenimientoAdmin(admin.ModelAdmin):
 
     list_display = (
         "armamento",
-        "fecha_inicio",
+        "fecha_ingreso",
+        "fecha_salida",
         "estado",
         "tecnico",
     )
 
     list_filter = (
         "estado",
+        "fecha_ingreso",
     )
 
     search_fields = (
