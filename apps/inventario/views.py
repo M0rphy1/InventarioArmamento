@@ -619,8 +619,29 @@ def crear_movimiento(request):
 from datetime import datetime
 from reportlab.lib.units import cm
 from .reportes.armamentos_pdf import generar_reporte_armamentos_pdf
+from .reportes.responsables_pdf import generar_reporte_responsables_pdf
+from .reportes.ubicaciones_pdf import generar_reporte_ubicaciones_pdf
+from .reportes.tipos_pdf import generar_reporte_tipos_pdf
+from .reportes.movimientos_pdf import generar_reporte_movimientos_pdf
+from .reportes.mantenimientos_pdf import generar_reporte_mantenimientos_pdf
+
 def reporte_armamentos_pdf(request):
     return generar_reporte_armamentos_pdf(request)
+
+def reporte_responsables_pdf(request):
+    return generar_reporte_responsables_pdf(request)
+
+def reporte_ubicaciones_pdf(request):
+    return generar_reporte_ubicaciones_pdf(request)
+
+def reporte_tipos_pdf(request):
+    return generar_reporte_tipos_pdf(request)
+
+def reporte_movimientos_pdf(request):
+    return generar_reporte_movimientos_pdf(request)
+
+def reporte_mantenimientos_pdf(request):
+    return generar_reporte_mantenimientos_pdf(request)
 
 #Mantenimiento
 @login_required

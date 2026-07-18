@@ -124,6 +124,36 @@ urlpatterns = [
         name="reporte_armamentos_pdf",
     ),
 
+    path(
+        "responsables/pdf/",
+        views.reporte_responsables_pdf,
+        name="reporte_responsables_pdf",
+    ),
+
+    path(
+            "ubicaciones/pdf/",
+            views.reporte_ubicaciones_pdf,
+            name="reporte_ubicaciones_pdf",
+        ),
+
+    path(
+            "tipos/pdf/",
+            views.reporte_tipos_pdf,
+            name="reporte_tipos_pdf",
+        ),
+
+    path(
+            "movimientos/pdf/",
+            views.reporte_movimientos_pdf,
+            name="reporte_movimientos_pdf",
+        ),
+
+    path(
+            "mantenimientos/pdf/",
+            views.reporte_mantenimientos_pdf,
+            name="reporte_mantenimientos_pdf",
+        ),
+
 #mantenimiento
     path(
         "mantenimientos/",
