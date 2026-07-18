@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -155,37 +156,19 @@ LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "login"
 
 LOGGING = {
-
     "version": 1,
-
     "disable_existing_loggers": False,
-
     "handlers": {
-
-        "file": {
-
-            "level": "ERROR",
-
-            "class": "logging.FileHandler",
-
-            "filename": BASE_DIR / "logs" / "django.log",
-
+        "console": {
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
         },
-
     },
-
     "loggers": {
-
         "django": {
-
-            "handlers": ["file"],
-
+            "handlers": ["console"],
             "level": "ERROR",
-
             "propagate": True,
-
         },
-
     },
-
 }
