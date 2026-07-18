@@ -7,22 +7,21 @@ venv/
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
 
-# Base de datos SQLite (no la usaremos, pero por si acaso)
+# Base de datos SQLite (por si se usa)
 db.sqlite3
 
-# Archivos estáticos recopilados
+# Archivos estáticos generados
 staticfiles/
 
 # Archivos de medios
 media/
 
+# Logs
+logs/*.log
+
 # VS Code
 .vscode/
-
-# Logs
-*.log
 
 # Archivos del sistema
 .DS_Store

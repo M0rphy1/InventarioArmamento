@@ -29,7 +29,10 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv(
+    "ALLOWED_HOSTS",
+    "127.0.0.1,localhost"
+).split(",")
 
 
 # Application definition
@@ -49,6 +52,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -133,6 +137,10 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+STATICFILES_STORAGE = (
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -145,3 +153,39 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 
 LOGOUT_REDIRECT_URL = "login"
+
+LOGGING = {
+
+    "version": 1,
+
+    "disable_existing_loggers": False,
+
+    "handlers": {
+
+        "file": {
+
+            "level": "ERROR",
+
+            "class": "logging.FileHandler",
+
+            "filename": BASE_DIR / "logs" / "django.log",
+
+        },
+
+    },
+
+    "loggers": {
+
+        "django": {
+
+            "handlers": ["file"],
+
+            "level": "ERROR",
+
+            "propagate": True,
+
+        },
+
+    },
+
+}
