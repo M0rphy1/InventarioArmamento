@@ -17,9 +17,16 @@ Armamentos
 
     </a>
 
-    <a href="{% url 'crear_armamento' %}" class="btn btn-primary">
-        Nuevo Armamento
-    </a>
+        {% if request.user.groups.first.name == "Administrador" %}
+
+            <a href="{% url 'crear_armamento' %}"
+               class="btn btn-primary">
+
+                Nuevo Armamento
+
+            </a>
+
+        {% endif %}
 
 </div>
 
@@ -105,10 +112,15 @@ Armamentos
 
             <td>
 
-                <a href="{% url 'editar_armamento' armamento.id %}" class="btn btn-warning btn-sm">
-                    Editar
-                </a>
-                
+                {% if request.user.groups.first.name == "Administrador" %}
+
+                    <a href="{% url 'editar_armamento' armamento.id %}"
+                    class="btn btn-warning btn-sm">
+                        Editar
+                    </a>
+
+                {% endif %}
+
                 <a href="{% url 'historial_armamento' armamento.id %}"
                 class="btn btn-info btn-sm">
                     Historial
@@ -116,10 +128,10 @@ Armamentos
 
                 {% if request.user.groups.first.name == "Administrador" %}
 
-                <a href="{% url 'eliminar_armamento' armamento.id %}"
-                class="btn btn-danger btn-sm">
-                    Eliminar
-                </a>
+                    <a href="{% url 'eliminar_armamento' armamento.id %}"
+                    class="btn btn-danger btn-sm">
+                        Eliminar
+                    </a>
 
                 {% endif %}
 

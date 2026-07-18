@@ -204,6 +204,7 @@ def historial_armamento(request, pk):
 
 @login_required
 @user_passes_test(es_administrador)
+@transaction.atomic
 def crear_armamento(request):
 
     if request.method == "POST":
@@ -211,7 +212,28 @@ def crear_armamento(request):
         form = ArmamentoForm(request.POST)
 
         if form.is_valid():
-            form.save()
+
+            armamento = form.save()
+
+            registrar_movimiento(
+
+                armamento=armamento,
+
+                tipo="INGRESO",
+
+                usuario=request.user,
+
+                ubicacion_origen=None,
+                ubicacion_destino=armamento.ubicacion,
+
+                responsable_anterior=None,
+                responsable_nuevo=armamento.responsable,
+
+                estado_anterior=None,
+                estado_nuevo=armamento.estado,
+
+                observacion="Registro inicial del armamento."
+            )
 
             messages.success(
                 request,
@@ -248,7 +270,14 @@ def editar_armamento(request, pk):
 
         if form.is_valid():
 
-            form.save()
+            armamento_editado = form.save(commit=False)
+
+            # Mantener los valores originales
+            armamento_editado.estado = armamento.estado
+            armamento_editado.ubicacion = armamento.ubicacion
+            armamento_editado.responsable = armamento.responsable
+
+            armamento_editado.save()
 
             messages.success(
                 request,

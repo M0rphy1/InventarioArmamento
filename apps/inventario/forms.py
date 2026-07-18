@@ -23,6 +23,29 @@ class UbicacionForm(forms.ModelForm):
 
 class ArmamentoForm(forms.ModelForm):
 
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+        # Si existe una instancia, estamos editando
+        if self.instance and self.instance.pk:
+
+            self.fields["estado"].disabled = True
+            self.fields["ubicacion"].disabled = True
+            self.fields["responsable"].disabled = True
+
+            self.fields["estado"].help_text = (
+                "El estado solo puede modificarse desde el módulo Movimientos o Mantenimiento."
+            )
+
+            self.fields["ubicacion"].help_text = (
+                "La ubicación solo puede modificarse desde el módulo Movimientos."
+            )
+
+            self.fields["responsable"].help_text = (
+                "El responsable solo puede modificarse desde el módulo Movimientos."
+            )
+
     class Meta:
         model = Armamento
         fields = [
