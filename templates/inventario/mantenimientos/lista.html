@@ -59,23 +59,59 @@ Mantenimientos
 
             <td>{{ mantenimiento.tecnico }}</td>
 
-            <td>
+            <td class="text-center">
 
-                <a
-                    href="{% url 'editar_mantenimiento' mantenimiento.id %}"
-                    class="btn btn-warning btn-sm">
+                {% if mantenimiento.estado == "EN_PROCESO" %}
 
-                    Editar
+                    <a href="{% url 'editar_mantenimiento' mantenimiento.pk %}"
+                    class="btn btn-warning btn-sm"
+                    title="Editar mantenimiento">
+                        <i class="bi bi-pencil"></i>
+                        Editar
+                    </a>
 
-                </a>
+                    <a href="{% url 'eliminar_mantenimiento' mantenimiento.pk %}"
+                    class="btn btn-danger btn-sm"
+                    title="Eliminar mantenimiento">
+                        <i class="bi bi-trash"></i>
+                        Eliminar
+                    </a>
 
-                <a
-                    href="{% url 'eliminar_mantenimiento' mantenimiento.id %}"
-                    class="btn btn-danger btn-sm">
+                {% else %}
 
-                    Eliminar
+                    <span
+                        class="d-inline-block"
+                        tabindex="0"
+                        data-bs-toggle="tooltip"
+                        title="Solo se puede editar un mantenimiento en proceso">
 
-                </a>
+                        <button
+                            class="btn btn-warning btn-sm"
+                            disabled
+                            style="pointer-events: none;">
+                            <i class="bi bi-pencil"></i>
+                            Editar
+                        </button>
+
+                    </span>
+
+                    <span
+                        class="d-inline-block"
+                        tabindex="0"
+                        data-bs-toggle="tooltip"
+                        title="Solo se puede eliminar un mantenimiento en proceso">
+
+                        <button
+                            class="btn btn-danger btn-sm"
+                            disabled
+                            style="pointer-events: none;">
+                            <i class="bi bi-trash"></i>
+                            Eliminar
+                        </button>
+
+                    </span>
+
+                {% endif %}
 
             </td>
 
@@ -98,5 +134,23 @@ Mantenimientos
     </tbody>
 
 </table>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const tooltipTriggerList = document.querySelectorAll(
+        '[data-bs-toggle="tooltip"]'
+    );
+
+    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+
+        new bootstrap.Tooltip(tooltipTriggerEl);
+
+    });
+
+});
+
+</script>
 
 {% endblock %}

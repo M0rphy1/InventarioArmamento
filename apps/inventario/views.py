@@ -735,6 +735,15 @@ def editar_mantenimiento(request, pk):
         pk=pk
     )
 
+    if mantenimiento.estado == "FINALIZADO":
+
+        messages.warning(
+            request,
+            "Este mantenimiento ya fue finalizado y no puede modificarse."
+        )
+
+        return redirect("lista_mantenimientos")
+
     if request.method == "POST":
 
         form = FinalizarMantenimientoForm(
@@ -831,6 +840,15 @@ def eliminar_mantenimiento(request, pk):
         Mantenimiento,
         pk=pk
     )
+
+    if mantenimiento.estado == "FINALIZADO":
+
+        messages.warning(
+            request,
+            "No se puede eliminar un mantenimiento finalizado porque forma parte del historial."
+        )
+
+        return redirect("lista_mantenimientos")
 
     if request.method == "POST":
 

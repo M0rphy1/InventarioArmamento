@@ -1,6 +1,8 @@
 from django import forms
 from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento
-
+from datetime import timedelta
+from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 class UbicacionForm(forms.ModelForm):
 
@@ -26,6 +28,21 @@ class ArmamentoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        hoy = timezone.localdate()
+        maximo = hoy + timedelta(days=180)
+
+        if self.instance.pk:
+
+            self.fields["fecha_ingreso"].widget.attrs["readonly"] = True
+
+            self.initial["fecha_ingreso"] = (
+                self.instance.fecha_ingreso.strftime("%Y-%m-%d")
+            )
+
+        else:
+
+            self.fields["fecha_ingreso"].widget.attrs["min"] = hoy.isoformat()
+            self.fields["fecha_ingreso"].widget.attrs["max"] = maximo.isoformat()
 
         # Si existe una instancia, estamos editando
         if self.instance and self.instance.pk:
@@ -108,6 +125,32 @@ class ArmamentoForm(forms.ModelForm):
                 }
             ),
         }
+
+    def clean_fecha_ingreso(self):
+
+        # Si es edición, nunca permitir cambiar la fecha
+        if self.instance.pk:
+
+            return self.instance.fecha_ingreso
+
+        fecha = self.cleaned_data["fecha_ingreso"]
+
+        hoy = timezone.localdate()
+        maximo = hoy + timedelta(days=180)
+
+        if fecha < hoy:
+
+            raise ValidationError(
+                "La fecha de ingreso no puede ser anterior a la fecha actual."
+            )
+
+        if fecha > maximo:
+
+            raise ValidationError(
+                "La fecha de ingreso no puede superar los 180 días desde hoy."
+            )
+
+        return fecha
 
 class TipoArmamentoForm(forms.ModelForm):
 
@@ -360,6 +403,55 @@ class MantenimientoForm(forms.ModelForm):
 
         }
 
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+        hoy = timezone.localdate()
+        maximo = hoy + timedelta(days=180)
+
+        self.fields["fecha_ingreso"].widget.attrs["min"] = hoy.isoformat()
+        self.fields["fecha_ingreso"].widget.attrs["max"] = maximo.isoformat()
+
+
+    def clean_fecha_ingreso(self):
+
+        fecha = self.cleaned_data["fecha_ingreso"]
+
+        hoy = timezone.localdate()
+        maximo = hoy + timedelta(days=180)
+
+        if fecha < hoy:
+
+            raise ValidationError(
+                "La fecha de ingreso no puede ser anterior a la fecha actual."
+            )
+
+        if fecha > maximo:
+
+            raise ValidationError(
+                "La fecha de ingreso no puede superar los 180 días desde hoy."
+            )
+
+        return fecha
+
+    def clean_armamento(self):
+
+        armamento = self.cleaned_data["armamento"]
+
+        existe = Mantenimiento.objects.filter(
+            armamento=armamento,
+            estado="EN_PROCESO"
+        ).exists()
+
+        if existe:
+
+            raise ValidationError(
+                "Este armamento ya tiene un mantenimiento en proceso."
+            )
+
+        return armamento
+
 class FinalizarMantenimientoForm(forms.ModelForm):
 
     class Meta:
@@ -405,10 +497,53 @@ class FinalizarMantenimientoForm(forms.ModelForm):
 
         }
 
-def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
 
-    super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
-    self.fields["estado"].choices = [
-        ("FINALIZADO", "Finalizado")
-    ]
+        self.fields["estado"].choices = [
+            ("FINALIZADO", "Finalizado")
+        ]
+
+        hoy = timezone.localdate()
+        maximo = hoy + timedelta(days=180)
+
+        self.fields["fecha_salida"].widget.attrs["min"] = hoy.isoformat()
+        self.fields["fecha_salida"].widget.attrs["max"] = maximo.isoformat()
+
+    def clean_fecha_salida(self):
+
+        fecha = self.cleaned_data["fecha_salida"]
+
+        hoy = timezone.localdate()
+        maximo = hoy + timedelta(days=180)
+
+        if fecha < hoy:
+
+            raise ValidationError(
+                "La fecha de salida no puede ser anterior a la fecha actual."
+            )
+
+        if fecha > maximo:
+
+            raise ValidationError(
+                "La fecha de salida no puede superar los 180 días desde hoy."
+            )
+
+        return fecha
+
+    def clean(self):
+
+        cleaned_data = super().clean()
+
+        fecha_ingreso = self.instance.fecha_ingreso
+        fecha_salida = cleaned_data.get("fecha_salida")
+
+        if fecha_salida and fecha_salida < fecha_ingreso:
+
+            raise ValidationError(
+                "La fecha de salida no puede ser anterior a la fecha de ingreso."
+            )
+
+        return cleaned_data
+    
