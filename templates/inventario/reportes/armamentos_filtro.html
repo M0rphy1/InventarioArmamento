@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Generar Reporte de Armamentos
+{% endblock %}
+
+{% block contenido %}
+
+<div class="container mt-4">
+
+    <div class="card shadow">
+
+        <div class="card-header">
+
+            <h3 class="mb-0">
+
+                Generar Reporte de Armamentos
+
+            </h3>
+
+        </div>
+
+        <div class="card-body">
+
+            <form method="GET"
+                  action="{% url 'reporte_armamentos_pdf' %}">
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+
+                        Buscar por
+
+                    </label>
+
+                    <select
+                        id="tipoFiltro"
+                        class="form-select">
+
+                        <option value="">Reporte General</option>
+
+                        <option value="responsable">
+                            Responsable
+                        </option>
+
+                        <option value="armamento">
+                            Armamento
+                        </option>
+
+                        <option value="estado">
+                            Estado
+                        </option>
+
+                        <option value="ubicacion">
+                            Ubicación
+                        </option>
+
+                        <option value="tipo">
+                            Tipo
+                        </option>
+
+                        <option value="fecha">
+                            Fecha de ingreso
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- RESPONSABLE -->
+
+                <div
+                    id="filtroResponsable"
+                    class="mb-3 d-none">
+
+                    <label class="form-label">
+
+                        Responsables
+
+                    </label>
+
+                    {{ form.responsables }}
+
+                </div>
+
+
+                <!-- ARMAMENTO -->
+
+                <div
+                    id="filtroArmamento"
+                    class="mb-3 d-none">
+
+                    <label class="form-label">
+
+                        Armamentos
+
+                    </label>
+
+                    {{ form.armamentos }}
+
+                </div>
+
+
+                <!-- ESTADO -->
+
+                <div
+                    id="filtroEstado"
+                    class="mb-3 d-none">
+
+                    <label class="form-label">
+
+                        Estado
+
+                    </label>
+
+                    {{ form.estado }}
+
+                </div>
+
+
+                <!-- UBICACION -->
+
+                <div
+                    id="filtroUbicacion"
+                    class="mb-3 d-none">
+
+                    <label class="form-label">
+
+                        Ubicación
+
+                    </label>
+
+                    {{ form.ubicacion }}
+
+                </div>
+
+
+                <!-- TIPO -->
+
+                <div
+                    id="filtroTipo"
+                    class="mb-3 d-none">
+
+                    <label class="form-label">
+
+                        Tipo
+
+                    </label>
+
+                    {{ form.tipo }}
+
+                </div>
+
+
+                <!-- FECHAS -->
+
+                <div
+                    id="filtroFecha"
+                    class="row d-none">
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+
+                            Desde
+
+                        </label>
+
+                        {{ form.fecha_desde }}
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <label class="form-label">
+
+                            Hasta
+
+                        </label>
+
+                        {{ form.fecha_hasta }}
+
+                    </div>
+
+                </div>
+
+
+                <hr>
+
+                <button
+                    type="submit"
+                    class="btn btn-danger">
+
+                    <i class="bi bi-file-earmark-pdf"></i>
+
+                    Generar PDF
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+{% endblock %}
+{% block scripts %}
+<script>
+
+const selector = document.getElementById("tipoFiltro");
+
+const responsable = document.getElementById("filtroResponsable");
+const armamento = document.getElementById("filtroArmamento");
+const estado = document.getElementById("filtroEstado");
+const ubicacion = document.getElementById("filtroUbicacion");
+const tipo = document.getElementById("filtroTipo");
+const fecha = document.getElementById("filtroFecha");
+
+selector.addEventListener("change", function () {
+
+    responsable.classList.add("d-none");
+    armamento.classList.add("d-none");
+    estado.classList.add("d-none");
+    ubicacion.classList.add("d-none");
+    tipo.classList.add("d-none");
+    fecha.classList.add("d-none");
+
+    switch (this.value) {
+
+        case "responsable":
+            responsable.classList.remove("d-none");
+            break;
+
+        case "armamento":
+            armamento.classList.remove("d-none");
+            break;
+
+        case "estado":
+            estado.classList.remove("d-none");
+            break;
+
+        case "ubicacion":
+            ubicacion.classList.remove("d-none");
+            break;
+
+        case "tipo":
+            tipo.classList.remove("d-none");
+            break;
+
+        case "fecha":
+            fecha.classList.remove("d-none");
+            break;
+    }
+
+});
+
+if (document.getElementById("id_responsables")) {
+    new TomSelect("#id_responsables", {
+        plugins: ["remove_button"],
+        placeholder: "Buscar responsable...",
+        searchField: ["text"],
+        maxOptions: null,
+        create: false,
+        persist: false,
+        closeAfterSelect: false
+    });
+}
+
+if (document.getElementById("id_armamentos")) {
+    new TomSelect("#id_armamentos", {
+        plugins: ["remove_button"],
+        placeholder: "Buscar armamento por código...",
+        searchField: ["text"],
+        maxOptions: null,
+        create: false,
+        persist: false,
+        closeAfterSelect: false
+    });
+}
+
+</script>
+{% endblock %}

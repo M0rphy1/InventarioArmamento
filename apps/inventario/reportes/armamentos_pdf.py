@@ -75,7 +75,7 @@ def encabezado_pie(canvas, doc):
 # GENERAR PDF
 # ==============================
 
-def generar_reporte_armamentos_pdf(request):
+def generar_reporte_armamentos_pdf(request, armamentos):
 
 
     response = HttpResponse(
@@ -134,7 +134,7 @@ def generar_reporte_armamentos_pdf(request):
 
         Paragraph(
 
-            f"Total de armamentos registrados: {Armamento.objects.count()}",
+            f"Total de armamentos encontrados: {Armamento.objects.count()}",
 
             estilos["Normal"]
 
@@ -176,18 +176,6 @@ def generar_reporte_armamentos_pdf(request):
         "Responsable"
 
     ]]
-
-
-
-    armamentos = Armamento.objects.select_related(
-
-        "tipo",
-
-        "ubicacion",
-
-        "responsable"
-
-    )
 
 
 

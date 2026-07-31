@@ -546,4 +546,112 @@ class FinalizarMantenimientoForm(forms.ModelForm):
             )
 
         return cleaned_data
-    
+
+#Formulario para filtros Reportes
+class ReporteArmamentoForm(forms.Form):
+
+    responsables = forms.ModelMultipleChoiceField(
+
+        queryset=Responsable.objects.filter(
+            activo=True
+        ).order_by("apellidos", "nombres"),
+
+        required=False,
+
+        widget=forms.SelectMultiple(attrs={
+            "id": "id_responsables",
+        })
+
+    )
+
+    armamentos = forms.ModelMultipleChoiceField(
+
+        queryset=Armamento.objects.all().order_by("codigo"),
+
+        required=False,
+
+        widget=forms.SelectMultiple(attrs={
+            "id": "id_armamentos",
+        })
+
+    )
+
+    estado = forms.ChoiceField(
+
+        required=False,
+
+        choices=[
+
+            ("", "Todos"),
+
+            ("DISPONIBLE", "Disponible"),
+
+            ("PRESTADO", "Prestado"),
+
+            ("MANTENIMIENTO", "Mantenimiento"),
+
+            ("BAJA", "Baja"),
+
+        ],
+
+        widget=forms.Select(attrs={
+            "class": "form-select"
+        })
+
+    )
+
+    ubicacion = forms.ModelChoiceField(
+
+        queryset=Ubicacion.objects.all(),
+
+        required=False,
+
+        empty_label="Todas",
+
+        widget=forms.Select(attrs={
+            "class": "form-select"
+        })
+
+    )
+
+    tipo = forms.ModelChoiceField(
+
+        queryset=TipoArmamento.objects.all(),
+
+        required=False,
+
+        empty_label="Todos",
+
+        widget=forms.Select(attrs={
+            "class": "form-select"
+        })
+
+    )
+
+    fecha_desde = forms.DateField(
+
+        required=False,
+
+        widget=forms.DateInput(attrs={
+
+            "class":"form-control",
+
+            "type":"date"
+
+        })
+
+    )
+
+    fecha_hasta = forms.DateField(
+
+        required=False,
+
+        widget=forms.DateInput(attrs={
+
+            "class":"form-control",
+
+            "type":"date"
+
+        })
+
+    )

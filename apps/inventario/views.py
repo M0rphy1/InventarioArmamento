@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento
-from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm, FinalizarMantenimientoForm
+from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm, FinalizarMantenimientoForm, ReporteArmamentoForm
 from django.contrib import messages
 
 from django.core.paginator import Paginator
@@ -625,8 +625,99 @@ from .reportes.tipos_pdf import generar_reporte_tipos_pdf
 from .reportes.movimientos_pdf import generar_reporte_movimientos_pdf
 from .reportes.mantenimientos_pdf import generar_reporte_mantenimientos_pdf
 
+#Reporte de armamentos
+@login_required
 def reporte_armamentos_pdf(request):
-    return generar_reporte_armamentos_pdf(request)
+
+    armamentos = Armamento.objects.select_related(
+        "tipo",
+        "ubicacion",
+        "responsable"
+    )
+
+    # ==========================
+    # RESPONSABLE
+    # ==========================
+
+    responsables = request.GET.getlist("responsables")
+
+    if responsables:
+
+        armamentos = armamentos.filter(
+            responsable_id__in=responsables
+        )
+
+    # ==========================
+    # ARMAMENTOS
+    # ==========================
+
+    armamentos_ids = request.GET.getlist("armamentos")
+
+    if armamentos_ids:
+
+        armamentos = armamentos.filter(
+            id__in=armamentos_ids
+        )
+
+    # ==========================
+    # ESTADO
+    # ==========================
+
+    estado = request.GET.get("estado")
+
+    if estado:
+
+        armamentos = armamentos.filter(
+            estado=estado
+        )
+
+    # ==========================
+    # UBICACIÓN
+    # ==========================
+
+    ubicacion = request.GET.get("ubicacion")
+
+    if ubicacion:
+
+        armamentos = armamentos.filter(
+            ubicacion_id=ubicacion
+        )
+
+    # ==========================
+    # TIPO
+    # ==========================
+
+    tipo = request.GET.get("tipo")
+
+    if tipo:
+
+        armamentos = armamentos.filter(
+            tipo_id=tipo
+        )
+
+    # ==========================
+    # FECHAS
+    # ==========================
+
+    fecha_desde = request.GET.get("fecha_desde")
+    fecha_hasta = request.GET.get("fecha_hasta")
+
+    if fecha_desde:
+
+        armamentos = armamentos.filter(
+            fecha_ingreso__gte=fecha_desde
+        )
+
+    if fecha_hasta:
+
+        armamentos = armamentos.filter(
+            fecha_ingreso__lte=fecha_hasta
+        )
+
+    return generar_reporte_armamentos_pdf(
+        request,
+        armamentos
+    )
 
 def reporte_responsables_pdf(request):
     return generar_reporte_responsables_pdf(request)
@@ -861,5 +952,19 @@ def eliminar_mantenimiento(request, pk):
         "inventario/mantenimientos/eliminar.html",
         {
             "mantenimiento": mantenimiento
+        }
+    )
+
+#Filtro de reportes
+@login_required
+def reporte_armamentos(request):
+
+    form = ReporteArmamentoForm()
+
+    return render(
+        request,
+        "inventario/reportes/armamentos_filtro.html",
+        {
+            "form": form
         }
     )

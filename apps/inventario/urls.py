@@ -179,4 +179,11 @@ urlpatterns = [
         name="eliminar_mantenimiento"
     ),
 
+#Filtro Reportes
+    path(
+        "reportes/armamentos/",
+        views.reporte_armamentos,
+        name="reporte_armamentos",
+    ),
+
 ]
