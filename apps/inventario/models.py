@@ -66,6 +66,66 @@ class Ubicacion(models.Model):
 
     def __str__(self):
         return self.nombre
+
+#Promocion
+class Promocion(models.Model):
+
+    nombre = models.CharField(
+        max_length=50,
+        unique=True
+    )
+
+    descripcion = models.CharField(
+        max_length=150,
+        blank=True
+    )
+
+    activa = models.BooleanField(
+        default=True
+    )
+
+    class Meta:
+        verbose_name = "Promoción"
+        verbose_name_plural = "Promociones"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+#Alumno
+class Alumno(models.Model):
+
+    promocion = models.ForeignKey(
+        Promocion,
+        on_delete=models.PROTECT,
+        related_name="alumnos"
+    )
+
+    cedula = models.CharField(
+        max_length=10,
+        unique=True
+    )
+
+    nombres = models.CharField(
+        max_length=100
+    )
+
+    apellidos = models.CharField(
+        max_length=100
+    )
+
+    activo = models.BooleanField(
+        default=True
+    )
+
+    class Meta:
+        verbose_name = "Alumno"
+        verbose_name_plural = "Alumnos"
+        ordering = ["apellidos", "nombres"]
+
+    def __str__(self):
+        return f"{self.apellidos} {self.nombres} ({self.promocion.nombre})"
+    
 #Responsable
 class Responsable(models.Model):
 
@@ -135,10 +195,9 @@ class Responsable(models.Model):
 class Armamento(models.Model):
 
     ESTADOS = [
-        ("DISPONIBLE", "Disponible"),
-        ("PRESTADO", "Prestado"),
+        ("OPERABLE", "Operable"),
         ("MANTENIMIENTO", "Mantenimiento"),
-        ("BAJA", "Baja"),
+        ("NO_OPERABLE", "No Operable"),
     ]
 
     codigo = models.CharField(
@@ -165,17 +224,10 @@ class Armamento(models.Model):
 
     calibre = models.CharField(max_length=50)
 
-    numero_inventario = models.CharField(
-        max_length=30,
-        unique=True
-    )
-
-    anio_fabricacion = models.PositiveIntegerField()
-
     estado = models.CharField(
         max_length=20,
         choices=ESTADOS,
-        default="DISPONIBLE"
+        default="OPERABLE"
     )
 
     ubicacion = models.ForeignKey(
@@ -184,13 +236,20 @@ class Armamento(models.Model):
         related_name="armamentos"
     )
 
+    duenio = models.ForeignKey(
+        Alumno,
+        on_delete=models.PROTECT,
+        related_name="armamentos",
+        verbose_name="Dueño del fusil",
+        null=True,
+        blank=True,
+    )
+
     responsable = models.ForeignKey(
         Responsable,
         on_delete=models.PROTECT,
         related_name="armamentos"
     )
-
-    fecha_ingreso = models.DateField()
 
     observaciones = models.TextField(
         blank=True
@@ -206,40 +265,27 @@ class Armamento(models.Model):
     def __str__(self):
         return f"{self.codigo} - {self.numero_serie}"
 
-    def clean(self):
-        if self.anio_fabricacion > timezone.now().year:
-            raise ValidationError(
-                "El año de fabricación no puede ser mayor al año actual."
-            )
-
-        if self.fecha_ingreso > timezone.now().date():
-            raise ValidationError(
-                "La fecha de ingreso no puede ser futura."
-            )
-
     @property
     def nombre_completo(self):
         return f"{self.tipo} {self.marca} {self.modelo}"
 
     @property
     def esta_disponible(self):
-        return self.estado == "DISPONIBLE"
+        return self.estado == "OPERABLE"
 
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
 #Movimiento
 class Movimiento(models.Model):
 
     TIPOS = [
         ("INGRESO", "Ingreso"),
-        ("SALIDA", "Salida"),
-        ("PRESTAMO", "Préstamo"),
-        ("DEVOLUCION", "Devolución"),
-        ("MANTENIMIENTO", "Mantenimiento"),
         ("CAMBIO_UBICACION", "Cambio de ubicación"),
-        ("CAMBIO_RESPONSABLE", "Cambio de responsable"),
-        ("BAJA", "Baja"),
+        ("CAMBIO_RESPONSABLE", "Cambio de responsable del armerillo"),
+        ("CAMBIO_DUENIO", "Cambio de dueño"),
+        ("NO_OPERABLE", "Marcar como No Operable"),
     ]
 
     armamento = models.ForeignKey(
@@ -285,6 +331,22 @@ class Movimiento(models.Model):
         blank=True
     )
 
+    duenio_anterior = models.ForeignKey(
+        Alumno,
+        on_delete=models.PROTECT,
+        related_name="movimientos_duenio_anterior",
+        null=True,
+        blank=True
+    )
+
+    duenio_nuevo = models.ForeignKey(
+        Alumno,
+        on_delete=models.PROTECT,
+        related_name="movimientos_duenio_nuevo",
+        null=True,
+        blank=True
+    )
+
     estado_anterior = models.CharField(
         max_length=20,
         blank=True,
@@ -319,6 +381,7 @@ class Movimiento(models.Model):
 
     def __str__(self):
         return f"{self.armamento.codigo} - {self.get_tipo_display()}"
+    
 #Mantenimiento
 class Mantenimiento(models.Model):
 
@@ -355,8 +418,13 @@ class Mantenimiento(models.Model):
         default="PENDIENTE"
     )
 
-    tecnico = models.CharField(
-        max_length=150
+    responsable_armerillo = models.ForeignKey(
+        Responsable,
+        on_delete=models.PROTECT,
+        related_name="mantenimientos_tecnico",
+        verbose_name="Responsable del armerillo",
+        null=True,
+        blank=True,
     )
 
     ubicacion_destino = models.ForeignKey(

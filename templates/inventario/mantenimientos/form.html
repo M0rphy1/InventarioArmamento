@@ -16,23 +16,124 @@
 
     {% csrf_token %}
 
-    {{ form.as_p }}
+    <div class="row">
 
-    <button
-        class="btn btn-success">
+        <div class="col-md-6 mb-3">
+
+            <label>Armamento</label>
+            {{ form.armamento }}
+
+            <div
+                id="info_armamento"
+                class="alert alert-info mt-3"
+                style="display:none;">
+
+                <h6 class="mb-3">
+                    Información del armamento
+                </h6>
+
+                <p><strong>Código:</strong> <span id="codigo_info"></span></p>
+
+                <p><strong>Dueño:</strong> <span id="duenio_info"></span></p>
+
+                <p><strong>Promoción:</strong> <span id="promocion_info"></span></p>
+
+                <p><strong>Ubicación:</strong> <span id="ubicacion_info"></span></p>
+
+                <p><strong>Estado:</strong> <span id="estado_info"></span></p>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-6 mb-3">
+
+            <label>Fecha de ingreso</label>
+            {{ form.fecha_ingreso }}
+
+        </div>
+
+        <div class="col-md-6 mb-3">
+
+            <label>Responsable del armerillo</label>
+            {{ form.responsable_armerillo }}
+
+        </div>
+
+        <div class="col-md-6 mb-3">
+
+            <label>Motivo</label>
+            {{ form.motivo }}
+
+        </div>
+
+        <div class="col-12 mb-3">
+
+            <label>Descripción</label>
+            {{ form.descripcion }}
+
+        </div>
+
+    </div>
+
+    <button class="btn btn-success">
 
         Guardar
 
     </button>
 
-    <a
-        href="{% url 'lista_mantenimientos' %}"
-        class="btn btn-secondary">
+    <a href="{% url 'lista_mantenimientos' %}"
+       class="btn btn-secondary">
 
         Cancelar
 
     </a>
 
 </form>
+<script>
+const armamento = document.getElementById("id_armamento");
+const responsable = document.getElementById("id_responsable_armerillo");
+
+armamento.addEventListener("change", function () {
+
+    if (!this.value){
+
+        responsable.value = "";
+
+        document.getElementById("info_armamento").style.display="none";
+
+        return;
+
+    }
+
+    fetch(`/inventario/armamentos/${this.value}/responsable/`)
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            responsable.value = data.responsable_id;
+
+            document.getElementById("info_armamento").style.display="block";
+
+            document.getElementById("codigo_info").textContent =
+                data.codigo;
+
+            document.getElementById("duenio_info").textContent =
+                data.duenio;
+
+            document.getElementById("promocion_info").textContent =
+                data.promocion;
+
+            document.getElementById("ubicacion_info").textContent =
+                data.ubicacion;
+
+            document.getElementById("estado_info").textContent =
+                data.estado;
+
+        });
+
+});
+</script>
 
 {% endblock %}

@@ -40,6 +40,11 @@
                 {{ form.responsable_nuevo }}
             </div>
 
+            <div class="mb-3" id="div_duenio">
+                <label class="form-label">Nuevo dueño del fusil</label>
+                {{ form.duenio_nuevo }}
+            </div>
+
             <div class="mb-3">
                 <label class="form-label">Observación</label>
                 {{ form.observacion }}
@@ -61,12 +66,13 @@
 </div>
 <script>
 
-function actualizarFormulario() {
+function actualizarFormulario(){
 
     const tipo = document.getElementById("id_tipo").value;
 
     document.getElementById("div_ubicacion").style.display = "none";
     document.getElementById("div_responsable").style.display = "none";
+    document.getElementById("div_duenio").style.display = "none";
 
     switch(tipo){
 
@@ -78,14 +84,12 @@ function actualizarFormulario() {
             document.getElementById("div_responsable").style.display = "block";
             break;
 
-        case "PRESTAMO":
-            document.getElementById("div_responsable").style.display = "block";
+        case "CAMBIO_DUENIO":
+            document.getElementById("div_duenio").style.display = "block";
             break;
 
-        case "DEVOLUCION":
-            break;
-
-        case "BAJA":
+        case "NO_OPERABLE":
+            // Solo observación
             break;
 
     }
@@ -100,6 +104,35 @@ document.addEventListener("DOMContentLoaded", function(){
         "change",
         actualizarFormulario
     );
+
+});
+
+</script>
+<script>
+
+// ==========================
+// Buscar armamento
+// ==========================
+
+new TomSelect("#id_armamento", {
+
+    placeholder: "Buscar fusil por código o serie...",
+    searchField: ["text"],
+    create: false,
+    persist: false,
+
+});
+
+// ==========================
+// Buscar dueño
+// ==========================
+
+new TomSelect("#id_duenio_nuevo", {
+
+    placeholder: "Buscar alumno por nombre o promoción...",
+    searchField: ["text"],
+    create: false,
+    persist: false,
 
 });
 

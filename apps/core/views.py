@@ -8,40 +8,43 @@ def dashboard(request):
 
     total_armamentos = Armamento.objects.count()
 
-    disponibles = Armamento.objects.filter(
-        estado="DISPONIBLE"
-    ).count()
-
-    prestados = Armamento.objects.filter(
-        estado="PRESTADO"
+    operables = Armamento.objects.filter(
+        estado="OPERABLE"
     ).count()
 
     mantenimiento = Armamento.objects.filter(
         estado="MANTENIMIENTO"
     ).count()
 
-    ultimos_movimientos = Movimiento.objects.select_related(
-        "armamento",
-        "usuario"
-    ).order_by("-fecha")[:10]
-
-    bajas = Armamento.objects.filter(
-        estado="BAJA"
+    no_operables = Armamento.objects.filter(
+        estado="NO_OPERABLE"
     ).count()
 
     responsables = Responsable.objects.filter(
         activo=True
     ).count()
 
+    ultimos_movimientos = (
+        Movimiento.objects
+        .select_related(
+            "armamento",
+            "usuario"
+        )
+        .order_by("-fecha")[:10]
+    )
+
     context = {
         "total_armamentos": total_armamentos,
-        "disponibles": disponibles,
-        "prestados": prestados,
+        "operables": operables,
         "mantenimiento": mantenimiento,
-        "ultimos_movimientos": ultimos_movimientos,
-        "bajas": bajas,
+        "no_operables": no_operables,
         "responsables": responsables,
+        "ultimos_movimientos": ultimos_movimientos,
     }
 
-    return render(request, "dashboard/dashboard.html", context)
+    return render(
+        request,
+        "dashboard/dashboard.html",
+        context
+    )
     

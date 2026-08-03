@@ -59,8 +59,8 @@ Generar Reporte de Armamentos
                             Tipo
                         </option>
 
-                        <option value="fecha">
-                            Fecha de ingreso
+                        <option value="promocion">
+                            Promoción
                         </option>
 
                     </select>
@@ -152,39 +152,21 @@ Generar Reporte de Armamentos
 
                 </div>
 
-
-                <!-- FECHAS -->
+                <!-- PROMOCIÓN -->
 
                 <div
-                    id="filtroFecha"
-                    class="row d-none">
+                    id="filtroPromocion"
+                    class="mb-3 d-none">
 
-                    <div class="col-md-6">
+                    <label class="form-label">
 
-                        <label class="form-label">
+                        Promoción
 
-                            Desde
+                    </label>
 
-                        </label>
-
-                        {{ form.fecha_desde }}
-
-                    </div>
-
-                    <div class="col-md-6">
-
-                        <label class="form-label">
-
-                            Hasta
-
-                        </label>
-
-                        {{ form.fecha_hasta }}
-
-                    </div>
+                    {{ form.promocion }}
 
                 </div>
-
 
                 <hr>
 
@@ -219,7 +201,7 @@ const armamento = document.getElementById("filtroArmamento");
 const estado = document.getElementById("filtroEstado");
 const ubicacion = document.getElementById("filtroUbicacion");
 const tipo = document.getElementById("filtroTipo");
-const fecha = document.getElementById("filtroFecha");
+const promocion = document.getElementById("filtroPromocion");
 
 selector.addEventListener("change", function () {
 
@@ -228,7 +210,7 @@ selector.addEventListener("change", function () {
     estado.classList.add("d-none");
     ubicacion.classList.add("d-none");
     tipo.classList.add("d-none");
-    fecha.classList.add("d-none");
+    promocion.classList.add("d-none");
 
     switch (this.value) {
 
@@ -251,9 +233,9 @@ selector.addEventListener("change", function () {
         case "tipo":
             tipo.classList.remove("d-none");
             break;
-
-        case "fecha":
-            fecha.classList.remove("d-none");
+        
+        case "promocion":
+            promocion.classList.remove("d-none");
             break;
     }
 

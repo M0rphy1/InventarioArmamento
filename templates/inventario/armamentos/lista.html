@@ -66,9 +66,10 @@ Armamentos
             <th>Tipo</th>
             <th>Marca</th>
             <th>Modelo</th>
+            <th>Dueño del fusil</th>
             <th>Ubicación</th>
             <th>Estado</th>
-            <th width="170">Acciones</th>
+            <th width="200">Acciones</th>
 
         </tr>
 
@@ -90,21 +91,35 @@ Armamentos
 
             <td>{{ armamento.modelo }}</td>
 
+            <td>
+                {% if armamento.duenio %}
+                    {{ armamento.duenio }}
+                {% else %}
+                    <span class="text-danger">Sin asignar</span>
+                {% endif %}
+            </td>
+
             <td>{{ armamento.ubicacion }}</td>
 
             <td>
 
-                {% if armamento.estado == "DISPONIBLE" %}
-                    <span class="badge bg-success">Disponible</span>
+                {% if armamento.estado == "OPERABLE" %}
 
-                {% elif armamento.estado == "PRESTADO" %}
-                    <span class="badge bg-warning text-dark">Prestado</span>
+                    <span class="badge bg-warning text-dark">
+                        Operable
+                    </span>
 
                 {% elif armamento.estado == "MANTENIMIENTO" %}
-                    <span class="badge bg-info text-dark">Mantenimiento</span>
 
-                {% else %}
-                    <span class="badge bg-danger">Baja</span>
+                    <span class="badge bg-success">
+                        Mantenimiento
+                    </span>
+
+                {% elif armamento.estado == "NO_OPERABLE" %}
+
+                    <span class="badge bg-danger">
+                        No Operable
+                    </span>
 
                 {% endif %}
 

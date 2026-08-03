@@ -179,6 +179,12 @@ urlpatterns = [
         name="eliminar_mantenimiento"
     ),
 
+    path(
+        "armamentos/<int:pk>/responsable/",
+        views.obtener_responsable_armamento,
+        name="obtener_responsable_armamento",
+    ),
+
 #Filtro Reportes
     path(
         "reportes/armamentos/",

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TipoArmamento, Ubicacion, Responsable ,Armamento, Movimiento, Mantenimiento
+from .models import TipoArmamento, Ubicacion, Responsable ,Armamento, Movimiento, Mantenimiento, Promocion, Alumno
 
 # Register your models here.
 @admin.register(TipoArmamento)
@@ -40,27 +40,34 @@ class ResponsableAdmin(admin.ModelAdmin):
 class ArmamentoAdmin(admin.ModelAdmin):
 
     list_display = (
-        "numero_inventario",
-        "numero_serie",
         "codigo",
+        "numero_serie",
         "tipo",
         "marca",
+        "modelo",
+        "calibre",
         "estado",
         "ubicacion",
+        "duenio",
         "responsable",
+        "activo",
     )
 
     list_filter = (
         "estado",
         "tipo",
         "ubicacion",
+        "activo",
     )
 
     search_fields = (
-        "numero_inventario",
-        "numero_serie",
         "codigo",
+        "numero_serie",
         "marca",
+        "modelo",
+        "duenio__apellidos",
+        "duenio__nombres",
+        "duenio__promocion__nombre",
     )
 
     ordering = ("codigo",)
@@ -81,7 +88,8 @@ class MovimientoAdmin(admin.ModelAdmin):
     )
 
     search_fields = (
-        "armamento__serie",
+        "armamento__codigo",
+        "armamento__numero_serie",
     )
 
     readonly_fields = (
@@ -96,7 +104,7 @@ class MantenimientoAdmin(admin.ModelAdmin):
         "fecha_ingreso",
         "fecha_salida",
         "estado",
-        "tecnico",
+        "responsable_armerillo",
     )
 
     list_filter = (
@@ -107,5 +115,33 @@ class MantenimientoAdmin(admin.ModelAdmin):
     search_fields = (
         "armamento__codigo",
         "armamento__numero_serie",
-        "tecnico",
+        "responsable_armerillo__apellidos",
+        "responsable_armerillo__nombres",
+    )
+
+#Promocion y Alumno
+@admin.register(Promocion)
+class PromocionAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "activa")
+    search_fields = ("nombre",)
+
+
+@admin.register(Alumno)
+class AlumnoAdmin(admin.ModelAdmin):
+    list_display = (
+        "apellidos",
+        "nombres",
+        "promocion",
+        "activo",
+    )
+
+    list_filter = (
+        "promocion",
+        "activo",
+    )
+
+    search_fields = (
+        "apellidos",
+        "nombres",
+        "cedula",
     )

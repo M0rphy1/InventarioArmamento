@@ -213,7 +213,15 @@ def crear_armamento(request):
 
         if form.is_valid():
 
+            print("Estado enviado por el formulario:", form.cleaned_data["estado"])
+
+            armamento = form.save(commit=False)
+
+            print("Estado antes de guardar:", armamento.estado)
+
             armamento = form.save()
+
+            print("Estado después de guardar:", armamento.estado)
 
             registrar_movimiento(
 
@@ -566,37 +574,48 @@ def crear_movimiento(request):
 
             movimiento.usuario = request.user
 
+            # Guardar datos anteriores
             movimiento.ubicacion_origen = armamento.ubicacion
             movimiento.responsable_anterior = armamento.responsable
+            movimiento.duenio_anterior = armamento.duenio
             movimiento.estado_anterior = armamento.estado
 
-            if movimiento.ubicacion_destino:
+            # ==========================
+            # Cambio de ubicación
+            # ==========================
+
+            if movimiento.tipo == "CAMBIO_UBICACION":
+
                 armamento.ubicacion = movimiento.ubicacion_destino
 
-            if movimiento.responsable_nuevo:
+            # ==========================
+            # Cambio de responsable
+            # ==========================
+
+            elif movimiento.tipo == "CAMBIO_RESPONSABLE":
+
                 armamento.responsable = movimiento.responsable_nuevo
 
-            if movimiento.estado_nuevo:
-                armamento.estado = movimiento.estado_nuevo
+            # ==========================
+            # Cambio de dueño
+            # ==========================
 
-            # Si el movimiento es BAJA,
-            # el armamento deja de estar activo.
-            if movimiento.tipo == "BAJA":
-                armamento.activo = False
+            elif movimiento.tipo == "CAMBIO_DUENIO":
 
-            # Si se devuelve,
-            # vuelve a estar activo.
-            elif movimiento.tipo == "DEVOLUCION":
-                armamento.activo = True
+                armamento.duenio = movimiento.duenio_nuevo
 
-            armamento.save(
-                update_fields=[
-                    "ubicacion",
-                    "responsable",
-                    "estado",
-                    "activo",
-                ]
-            )
+            # ==========================
+            # No operable
+            # ==========================
+
+            elif movimiento.tipo == "NO_OPERABLE":
+
+                armamento.estado = "NO_OPERABLE"
+
+            # Guardar datos nuevos en el movimiento
+            movimiento.estado_nuevo = armamento.estado
+
+            armamento.save()
 
             movimiento.save()
 
@@ -632,7 +651,9 @@ def reporte_armamentos_pdf(request):
     armamentos = Armamento.objects.select_related(
         "tipo",
         "ubicacion",
-        "responsable"
+        "responsable",
+        "duenio",
+        "duenio__promocion",
     )
 
     # ==========================
@@ -696,22 +717,15 @@ def reporte_armamentos_pdf(request):
         )
 
     # ==========================
-    # FECHAS
+    # PROMOCIÓN
     # ==========================
 
-    fecha_desde = request.GET.get("fecha_desde")
-    fecha_hasta = request.GET.get("fecha_hasta")
+    promocion = request.GET.get("promocion")
 
-    if fecha_desde:
-
-        armamentos = armamentos.filter(
-            fecha_ingreso__gte=fecha_desde
-        )
-
-    if fecha_hasta:
+    if promocion:
 
         armamentos = armamentos.filter(
-            fecha_ingreso__lte=fecha_hasta
+            duenio__promocion_id=promocion
         )
 
     return generar_reporte_armamentos_pdf(
@@ -864,7 +878,7 @@ def editar_mantenimiento(request, pk):
             # Cambios al armamento
             if mantenimiento.estado == "FINALIZADO":
 
-                armamento.estado = "DISPONIBLE"
+                armamento.estado = "OPERABLE"
 
                 if mantenimiento.ubicacion_destino:
                     armamento.ubicacion = mantenimiento.ubicacion_destino
@@ -954,6 +968,44 @@ def eliminar_mantenimiento(request, pk):
             "mantenimiento": mantenimiento
         }
     )
+
+from django.http import JsonResponse
+@login_required
+def obtener_responsable_armamento(request, pk):
+
+    armamento = get_object_or_404(
+        Armamento.objects.select_related(
+            "duenio",
+            "duenio__promocion",
+            "ubicacion",
+            "responsable",
+        ),
+        pk=pk,
+    )
+
+    return JsonResponse({
+
+        "responsable_id": armamento.responsable.id,
+
+        "codigo": armamento.codigo,
+
+        "estado": armamento.get_estado_display(),
+
+        "ubicacion": armamento.ubicacion.nombre,
+
+        "duenio": (
+            str(armamento.duenio)
+            if armamento.duenio else
+            "Sin asignar"
+        ),
+
+        "promocion": (
+            armamento.duenio.promocion.nombre
+            if armamento.duenio else
+            "-"
+        ),
+
+    })
 
 #Filtro de reportes
 @login_required

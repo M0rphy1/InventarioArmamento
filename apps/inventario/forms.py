@@ -1,5 +1,5 @@
 from django import forms
-from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento
+from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento, Promocion, Alumno
 from datetime import timedelta
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -28,27 +28,13 @@ class ArmamentoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        hoy = timezone.localdate()
-        maximo = hoy + timedelta(days=180)
-
-        if self.instance.pk:
-
-            self.fields["fecha_ingreso"].widget.attrs["readonly"] = True
-
-            self.initial["fecha_ingreso"] = (
-                self.instance.fecha_ingreso.strftime("%Y-%m-%d")
-            )
-
-        else:
-
-            self.fields["fecha_ingreso"].widget.attrs["min"] = hoy.isoformat()
-            self.fields["fecha_ingreso"].widget.attrs["max"] = maximo.isoformat()
 
         # Si existe una instancia, estamos editando
         if self.instance and self.instance.pk:
 
             self.fields["estado"].disabled = True
             self.fields["ubicacion"].disabled = True
+            self.fields["duenio"].disabled = True
             self.fields["responsable"].disabled = True
 
             self.fields["estado"].help_text = (
@@ -59,8 +45,12 @@ class ArmamentoForm(forms.ModelForm):
                 "La ubicación solo puede modificarse desde el módulo Movimientos."
             )
 
+            self.fields["duenio"].help_text = (
+                "El dueño del fusil no puede modificarse desde este formulario."
+            )
+
             self.fields["responsable"].help_text = (
-                "El responsable solo puede modificarse desde el módulo Movimientos."
+                "El responsable del armerillo no puede modificarse desde este formulario."
             )
 
     class Meta:
@@ -72,12 +62,10 @@ class ArmamentoForm(forms.ModelForm):
             "marca",
             "modelo",
             "calibre",
-            "numero_inventario",
-            "anio_fabricacion",
             "estado",
             "ubicacion",
+            "duenio",
             "responsable",
-            "fecha_ingreso",
             "observaciones",
             "activo",
         ]
@@ -95,22 +83,16 @@ class ArmamentoForm(forms.ModelForm):
 
             "calibre": forms.TextInput(attrs={"class": "form-control"}),
 
-            "numero_inventario": forms.TextInput(attrs={"class": "form-control"}),
-
-            "anio_fabricacion": forms.NumberInput(attrs={"class": "form-control"}),
-
             "estado": forms.Select(attrs={"class": "form-select"}),
 
             "ubicacion": forms.Select(attrs={"class": "form-select"}),
 
-            "responsable": forms.Select(attrs={"class": "form-select"}),
+            "duenio": forms.Select(attrs={
+                "class": "form-select",
+                "id": "id_duenio",
+            }),
 
-            "fecha_ingreso": forms.DateInput(
-                attrs={
-                    "class": "form-control",
-                    "type": "date",
-                }
-            ),
+            "responsable": forms.Select(attrs={"class": "form-select"}),
 
             "observaciones": forms.Textarea(
                 attrs={
@@ -125,32 +107,6 @@ class ArmamentoForm(forms.ModelForm):
                 }
             ),
         }
-
-    def clean_fecha_ingreso(self):
-
-        # Si es edición, nunca permitir cambiar la fecha
-        if self.instance.pk:
-
-            return self.instance.fecha_ingreso
-
-        fecha = self.cleaned_data["fecha_ingreso"]
-
-        hoy = timezone.localdate()
-        maximo = hoy + timedelta(days=180)
-
-        if fecha < hoy:
-
-            raise ValidationError(
-                "La fecha de ingreso no puede ser anterior a la fecha actual."
-            )
-
-        if fecha > maximo:
-
-            raise ValidationError(
-                "La fecha de ingreso no puede superar los 180 días desde hoy."
-            )
-
-        return fecha
 
 class TipoArmamentoForm(forms.ModelForm):
 
@@ -209,6 +165,7 @@ class ResponsableForm(forms.ModelForm):
 class MovimientoForm(forms.ModelForm):
 
     class Meta:
+
         model = Movimiento
 
         fields = [
@@ -216,6 +173,7 @@ class MovimientoForm(forms.ModelForm):
             "tipo",
             "ubicacion_destino",
             "responsable_nuevo",
+            "duenio_nuevo",
             "observacion",
         ]
 
@@ -237,6 +195,11 @@ class MovimientoForm(forms.ModelForm):
                 "class": "form-select"
             }),
 
+            "duenio_nuevo": forms.Select(attrs={
+                "class": "form-select",
+                "id": "id_duenio_nuevo",
+            }),
+
             "observacion": forms.Textarea(attrs={
                 "class": "form-control",
                 "rows": 4
@@ -249,13 +212,17 @@ class MovimientoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.fields["tipo"].choices = [
+
             ("INGRESO", "Ingreso"),
-            ("SALIDA", "Salida"),
-            ("PRESTAMO", "Préstamo"),
-            ("DEVOLUCION", "Devolución"),
+
             ("CAMBIO_UBICACION", "Cambio de ubicación"),
-            ("CAMBIO_RESPONSABLE", "Cambio de responsable"),
-            ("BAJA", "Baja"),
+
+            ("CAMBIO_RESPONSABLE", "Cambio de responsable del armerillo"),
+
+            ("CAMBIO_DUENIO", "Cambio de dueño"),
+
+            ("NO_OPERABLE", "Marcar como No Operable"),
+
         ]
 
     def clean(self):
@@ -266,10 +233,11 @@ class MovimientoForm(forms.ModelForm):
         armamento = cleaned_data.get("armamento")
         ubicacion = cleaned_data.get("ubicacion_destino")
         responsable = cleaned_data.get("responsable_nuevo")
+        duenio = cleaned_data.get("duenio_nuevo")
 
-        # ===============================
-        # CAMBIO DE UBICACIÓN
-        # ===============================
+        # ==========================
+        # Cambio de ubicación
+        # ==========================
 
         if tipo == "CAMBIO_UBICACION":
 
@@ -280,9 +248,9 @@ class MovimientoForm(forms.ModelForm):
                     "Debe seleccionar una ubicación."
                 )
 
-        # ===============================
-        # CAMBIO DE RESPONSABLE
-        # ===============================
+        # ==========================
+        # Cambio de responsable
+        # ==========================
 
         if tipo == "CAMBIO_RESPONSABLE":
 
@@ -293,73 +261,33 @@ class MovimientoForm(forms.ModelForm):
                     "Debe seleccionar un responsable."
                 )
 
-        # ===============================
-        # PRÉSTAMO
-        # ===============================
+        # ==========================
+        # Cambio de dueño
+        # ==========================
 
-        if tipo == "PRESTAMO":
+        if tipo == "CAMBIO_DUENIO":
 
-            if not responsable:
+            if not duenio:
 
                 self.add_error(
-                    "responsable_nuevo",
-                    "Debe seleccionar un responsable."
+                    "duenio_nuevo",
+                    "Debe seleccionar el nuevo dueño."
                 )
 
-            if armamento:
+        # ==========================
+        # No operable
+        # ==========================
 
-                if armamento.estado == "PRESTADO":
+        if tipo == "NO_OPERABLE":
 
-                    self.add_error(
-                        "armamento",
-                        "Este armamento ya se encuentra prestado."
-                    )
-
-                elif armamento.estado == "MANTENIMIENTO":
-
-                    self.add_error(
-                        "armamento",
-                        "El armamento está en mantenimiento."
-                    )
-
-                elif armamento.estado == "BAJA":
-
-                    self.add_error(
-                        "armamento",
-                        "El armamento se encuentra dado de baja."
-                    )
-
-            cleaned_data["estado_nuevo"] = "PRESTADO"
-
-        # ===============================
-        # DEVOLUCIÓN
-        # ===============================
-
-        if tipo == "DEVOLUCION":
-
-            if armamento and armamento.estado != "PRESTADO":
+            if armamento and armamento.estado == "NO_OPERABLE":
 
                 self.add_error(
                     "armamento",
-                    "Este armamento no se encuentra prestado."
+                    "El armamento ya se encuentra marcado como No Operable."
                 )
 
-            cleaned_data["estado_nuevo"] = "DISPONIBLE"
-
-        # ===============================
-        # BAJA
-        # ===============================
-
-        if tipo == "BAJA":
-
-            if armamento and armamento.estado == "BAJA":
-
-                self.add_error(
-                    "armamento",
-                    "El armamento ya se encuentra dado de baja."
-                )
-
-            cleaned_data["estado_nuevo"] = "BAJA"
+            cleaned_data["estado_nuevo"] = "NO_OPERABLE"
 
         return cleaned_data
 
@@ -374,7 +302,7 @@ class MantenimientoForm(forms.ModelForm):
             "fecha_ingreso",
             "motivo",
             "descripcion",
-            "tecnico",
+            "responsable_armerillo",
         ]
 
         widgets = {
@@ -395,10 +323,6 @@ class MantenimientoForm(forms.ModelForm):
             "descripcion": forms.Textarea(attrs={
                 "class": "form-control",
                 "rows": 4
-            }),
-
-            "tecnico": forms.TextInput(attrs={
-                "class": "form-control"
             }),
 
         }
@@ -464,7 +388,7 @@ class FinalizarMantenimientoForm(forms.ModelForm):
             "ubicacion_destino",
             "responsable_destino",
             "descripcion",
-            "tecnico",
+            "responsable_armerillo",
         ]
 
         widgets = {
@@ -491,7 +415,7 @@ class FinalizarMantenimientoForm(forms.ModelForm):
                 "rows": 4
             }),
 
-            "tecnico": forms.TextInput(attrs={
+            "responsable_armerillo": forms.TextInput(attrs={
                 "class": "form-control"
             }),
 
@@ -583,14 +507,9 @@ class ReporteArmamentoForm(forms.Form):
         choices=[
 
             ("", "Todos"),
-
-            ("DISPONIBLE", "Disponible"),
-
-            ("PRESTADO", "Prestado"),
-
+            ("OPERABLE", "Operable"),
             ("MANTENIMIENTO", "Mantenimiento"),
-
-            ("BAJA", "Baja"),
+            ("NO_OPERABLE", "No Operable"),
 
         ],
 
@@ -628,30 +547,18 @@ class ReporteArmamentoForm(forms.Form):
 
     )
 
-    fecha_desde = forms.DateField(
+    promocion = forms.ModelChoiceField(
+
+        queryset=Promocion.objects.filter(
+            activa=True
+        ).order_by("nombre"),
 
         required=False,
 
-        widget=forms.DateInput(attrs={
+        empty_label="Todas las promociones",
 
-            "class":"form-control",
-
-            "type":"date"
-
-        })
-
-    )
-
-    fecha_hasta = forms.DateField(
-
-        required=False,
-
-        widget=forms.DateInput(attrs={
-
-            "class":"form-control",
-
-            "type":"date"
-
+        widget=forms.Select(attrs={
+            "class": "form-select"
         })
 
     )

@@ -9,20 +9,14 @@
 <div class="card shadow">
 
     <div class="card-header">
-
         <h3>{{ titulo }}</h3>
+
         {% if form.errors %}
-
         <div class="alert alert-danger">
-
             <strong>Existen errores en el formulario.</strong>
-
             {{ form.errors }}
-
         </div>
-
         {% endif %}
-
     </div>
 
     <div class="card-body">
@@ -31,7 +25,6 @@
 
             {% csrf_token %}
 
-            <!-- {{ form.as_p }} -->
             <div class="row">
 
                 <div class="col-md-6 mb-3">
@@ -65,16 +58,6 @@
                 </div>
 
                 <div class="col-md-6 mb-3">
-                    <label>Número de Inventario</label>
-                    {{ form.numero_inventario }}
-                </div>
-
-                <div class="col-md-6 mb-3">
-                    <label>Año de Fabricación</label>
-                    {{ form.anio_fabricacion }}
-                </div>
-
-                <div class="col-md-6 mb-3">
                     <label>Estado</label>
                     {{ form.estado }}
                 </div>
@@ -85,13 +68,13 @@
                 </div>
 
                 <div class="col-md-6 mb-3">
-                    <label>Responsable</label>
-                    {{ form.responsable }}
+                    <label>Dueño del fusil</label>
+                    {{ form.duenio }}
                 </div>
 
                 <div class="col-md-6 mb-3">
-                    <label>Fecha de ingreso</label>
-                    {{ form.fecha_ingreso }}
+                    <label>Responsable del armerillo</label>
+                    {{ form.responsable }}
                 </div>
 
                 <div class="col-12 mb-3">
@@ -111,15 +94,11 @@
             <hr>
 
             <button class="btn btn-success">
-
                 Guardar
-
             </button>
 
             <a href="{% url 'lista_armamentos' %}" class="btn btn-secondary">
-
                 Cancelar
-
             </a>
 
         </form>

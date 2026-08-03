@@ -142,7 +142,7 @@ def generar_reporte_mantenimientos_pdf(request):
 
         "Descripción",
 
-        "Técnico",
+        "Responsable del armerillo",
 
         "Estado",
 
@@ -192,7 +192,8 @@ def generar_reporte_mantenimientos_pdf(request):
             ),
 
             Paragraph(
-                mantenimiento.tecnico,
+                str(mantenimiento.responsable_armerillo)
+                if mantenimiento.responsable_armerillo else "-",
                 estilo_tabla
             ),
 

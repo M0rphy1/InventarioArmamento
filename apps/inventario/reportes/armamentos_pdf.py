@@ -112,6 +112,9 @@ def generar_reporte_armamentos_pdf(request, armamentos):
 
 
     estilos = getSampleStyleSheet()
+    estilo_tabla = estilos["BodyText"]
+    estilo_tabla.fontSize = 8
+    estilo_tabla.leading = 9
 
 
 
@@ -134,7 +137,7 @@ def generar_reporte_armamentos_pdf(request, armamentos):
 
         Paragraph(
 
-            f"Total de armamentos encontrados: {Armamento.objects.count()}",
+            f"Total de armamentos encontrados: {armamentos.count()}",
 
             estilos["Normal"]
 
@@ -169,11 +172,15 @@ def generar_reporte_armamentos_pdf(request, armamentos):
 
         "Calibre",
 
+        "Dueño",
+
+        "Promoción",
+
+        "Responsable",
+
         "Estado",
 
         "Ubicación",
-
-        "Responsable"
 
     ]]
 
@@ -184,42 +191,55 @@ def generar_reporte_armamentos_pdf(request, armamentos):
 
         datos.append([
 
+            Paragraph(arma.codigo, estilo_tabla),
 
-            arma.codigo,
+            Paragraph(arma.numero_serie, estilo_tabla),
 
+            Paragraph(arma.tipo.nombre, estilo_tabla),
 
-            arma.numero_serie,
+            Paragraph(arma.marca, estilo_tabla),
 
+            Paragraph(arma.modelo, estilo_tabla),
 
-            arma.tipo.nombre,
+            Paragraph(arma.calibre, estilo_tabla),
 
+            Paragraph(str(arma.duenio) if arma.duenio else "-", estilo_tabla),
 
-            arma.marca,
+            Paragraph(
+                arma.duenio.promocion.nombre
+                if arma.duenio and arma.duenio.promocion
+                else "-",
+                estilo_tabla
+            ),
 
+            Paragraph(
+                f"{arma.responsable.grado} {arma.responsable.apellidos} {arma.responsable.nombres}",
+                estilo_tabla
+            ),
 
-            arma.modelo,
+            Paragraph(arma.get_estado_display(), estilo_tabla),
 
-
-            arma.calibre,
-
-
-            arma.get_estado_display(),
-
-
-            arma.ubicacion.nombre,
-
-
-            str(arma.responsable),
-
+            Paragraph(arma.ubicacion.nombre, estilo_tabla),
 
         ])
 
-
-
-
-    tabla = Table(datos)
-
-
+    #tabla = Table(datos)
+    tabla = Table(
+        datos,
+        colWidths=[
+            2.4 * cm,   # Código
+            2.6 * cm,   # Serie
+            1.3 * cm,   # Tipo
+            1.5 * cm,   # Marca
+            1.8 * cm,   # Modelo
+            2.0 * cm,   # Calibre
+            1.6 * cm,   # Dueño
+            1.9 * cm,   # Promoción
+            4.2 * cm,   # Responsable
+            2.3 * cm,   # Estado
+            4.0 * cm,   # Ubicación
+        ]
+    )
 
     tabla.setStyle(
 
