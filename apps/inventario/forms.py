@@ -562,3 +562,118 @@ class ReporteArmamentoForm(forms.Form):
         })
 
     )
+
+#Promocion
+class PromocionForm(forms.ModelForm):
+
+    class Meta:
+
+        model = Promocion
+
+        fields = [
+            "nombre",
+            "descripcion",
+            "activa",
+        ]
+
+        widgets = {
+
+            "nombre": forms.TextInput(attrs={
+                "class": "form-control"
+            }),
+
+            "descripcion": forms.TextInput(attrs={
+                "class": "form-control"
+            }),
+
+            "activa": forms.CheckboxInput(attrs={
+                "class": "form-check-input"
+            }),
+
+        }
+
+    def clean_nombre(self):
+
+        nombre = self.cleaned_data["nombre"].strip().upper()
+
+        existe = Promocion.objects.filter(
+            nombre__iexact=nombre
+        )
+
+        if self.instance.pk:
+            existe = existe.exclude(pk=self.instance.pk)
+
+        if existe.exists():
+
+            raise ValidationError(
+                "Ya existe una promoción con ese nombre."
+            )
+
+        return nombre
+
+#Alumno
+class AlumnoForm(forms.ModelForm):
+
+    class Meta:
+
+        model = Alumno
+
+        fields = [
+            "promocion",
+            "cedula",
+            "nombres",
+            "apellidos",
+            "activo",
+        ]
+
+        widgets = {
+
+            "promocion": forms.Select(attrs={
+                "class": "form-select"
+            }),
+
+            "cedula": forms.TextInput(attrs={
+                "class": "form-control"
+            }),
+
+            "nombres": forms.TextInput(attrs={
+                "class": "form-control"
+            }),
+
+            "apellidos": forms.TextInput(attrs={
+                "class": "form-control"
+            }),
+
+            "activo": forms.CheckboxInput(attrs={
+                "class": "form-check-input"
+            }),
+
+        }
+
+    def clean_cedula(self):
+
+        cedula = self.cleaned_data["cedula"].strip()
+
+        existe = Alumno.objects.filter(
+            cedula=cedula
+        )
+
+        if self.instance.pk:
+
+            existe = existe.exclude(pk=self.instance.pk)
+
+        if existe.exists():
+
+            raise ValidationError(
+                "Ya existe un alumno con esa cédula."
+            )
+
+        return cedula
+
+    def clean_nombres(self):
+
+        return self.cleaned_data["nombres"].strip().upper()
+
+    def clean_apellidos(self):
+
+        return self.cleaned_data["apellidos"].strip().upper()

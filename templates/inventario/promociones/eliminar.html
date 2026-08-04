@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+{{ titulo }}
+{% endblock %}
+
+{% block contenido %}
+
+<div class="card">
+
+    <div class="card-header bg-danger text-white">
+
+        <h4 class="mb-0">
+
+            {{ titulo }}
+
+        </h4>
+
+    </div>
+
+    <div class="card-body">
+
+        <p>
+
+            ¿Está seguro de eliminar la promoción:
+
+            <strong>
+
+                {{ objeto.nombre }}
+
+            </strong>?
+
+        </p>
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <button
+                class="btn btn-danger">
+
+                Sí, eliminar
+
+            </button>
+
+            <a
+                href="{% url 'lista_promociones' %}"
+                class="btn btn-secondary">
+
+                Cancelar
+
+            </a>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

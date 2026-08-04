@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento
-from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm, FinalizarMantenimientoForm, ReporteArmamentoForm
+from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento, Promocion, Alumno
+from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm, FinalizarMantenimientoForm, ReporteArmamentoForm, PromocionForm, AlumnoForm
 from django.contrib import messages
 
 from django.core.paginator import Paginator
@@ -1018,5 +1018,292 @@ def reporte_armamentos(request):
         "inventario/reportes/armamentos_filtro.html",
         {
             "form": form
+        }
+    )
+
+#Promocion
+@login_required
+def lista_promociones(request):
+
+    buscar = request.GET.get("buscar", "")
+
+    promociones = Promocion.objects.all()
+
+    if buscar:
+
+        promociones = promociones.filter(
+            Q(nombre__icontains=buscar) |
+            Q(descripcion__icontains=buscar)
+        )
+
+    paginator = Paginator(promociones, 10)
+
+    page_number = request.GET.get("page")
+
+    page_obj = paginator.get_page(page_number)
+
+    return render(
+        request,
+        "inventario/promociones/lista.html",
+        {
+            "page_obj": page_obj,
+            "buscar": buscar,
+        }
+    )
+
+
+@login_required
+@user_passes_test(es_administrador)
+def crear_promocion(request):
+
+    if request.method == "POST":
+
+        form = PromocionForm(request.POST)
+
+        if form.is_valid():
+
+            form.save()
+
+            messages.success(
+                request,
+                "Promoción registrada correctamente."
+            )
+
+            return redirect("lista_promociones")
+
+    else:
+
+        form = PromocionForm()
+
+    return render(
+        request,
+        "inventario/promociones/form.html",
+        {
+            "form": form,
+            "titulo": "Nueva Promoción"
+        }
+    )
+
+
+@login_required
+@user_passes_test(es_administrador)
+def editar_promocion(request, pk):
+
+    promocion = get_object_or_404(
+        Promocion,
+        pk=pk
+    )
+
+    if request.method == "POST":
+
+        form = PromocionForm(
+            request.POST,
+            instance=promocion
+        )
+
+        if form.is_valid():
+
+            form.save()
+
+            messages.success(
+                request,
+                "Promoción actualizada correctamente."
+            )
+
+            return redirect("lista_promociones")
+
+    else:
+
+        form = PromocionForm(instance=promocion)
+
+    return render(
+        request,
+        "inventario/promociones/form.html",
+        {
+            "form": form,
+            "titulo": "Editar Promoción"
+        }
+    )
+
+
+@login_required
+@user_passes_test(es_administrador)
+def eliminar_promocion(request, pk):
+
+    promocion = get_object_or_404(
+        Promocion,
+        pk=pk
+    )
+
+    if promocion.alumnos.exists():
+
+        messages.error(
+            request,
+            "No puede eliminar una promoción que tiene alumnos registrados."
+        )
+
+        return redirect("lista_promociones")
+
+    if request.method == "POST":
+
+        promocion.delete()
+
+        messages.success(
+            request,
+            "Promoción eliminada correctamente."
+        )
+
+        return redirect("lista_promociones")
+
+    return render(
+        request,
+        "inventario/promociones/eliminar.html",
+        {
+            "objeto": promocion,
+            "titulo": "Eliminar Promoción"
+        }
+    )
+
+#Alumno
+@login_required
+def lista_alumnos(request):
+
+    buscar = request.GET.get("buscar", "")
+
+    alumnos = Alumno.objects.select_related(
+        "promocion"
+    )
+
+    if buscar:
+
+        alumnos = alumnos.filter(
+            Q(cedula__icontains=buscar) |
+            Q(nombres__icontains=buscar) |
+            Q(apellidos__icontains=buscar) |
+            Q(promocion__nombre__icontains=buscar)
+        )
+
+    paginator = Paginator(alumnos, 10)
+
+    page_number = request.GET.get("page")
+
+    page_obj = paginator.get_page(page_number)
+
+    return render(
+        request,
+        "inventario/alumnos/lista.html",
+        {
+            "page_obj": page_obj,
+            "buscar": buscar,
+        }
+    )
+
+@login_required
+@user_passes_test(es_administrador)
+def crear_alumno(request):
+
+    if request.method == "POST":
+
+        form = AlumnoForm(request.POST)
+
+        if form.is_valid():
+
+            form.save()
+
+            messages.success(
+                request,
+                "Alumno registrado correctamente."
+            )
+
+            return redirect("lista_alumnos")
+
+    else:
+
+        form = AlumnoForm()
+
+    return render(
+        request,
+        "inventario/alumnos/form.html",
+        {
+            "form": form,
+            "titulo": "Nuevo Alumno"
+        }
+    )
+
+@login_required
+@user_passes_test(es_administrador)
+def editar_alumno(request, pk):
+
+    alumno = get_object_or_404(
+        Alumno,
+        pk=pk
+    )
+
+    if request.method == "POST":
+
+        form = AlumnoForm(
+            request.POST,
+            instance=alumno
+        )
+
+        if form.is_valid():
+
+            form.save()
+
+            messages.success(
+                request,
+                "Alumno actualizado correctamente."
+            )
+
+            return redirect("lista_alumnos")
+
+    else:
+
+        form = AlumnoForm(instance=alumno)
+
+    return render(
+        request,
+        "inventario/alumnos/form.html",
+        {
+            "form": form,
+            "titulo": "Editar Alumno"
+        }
+    )
+
+@login_required
+@user_passes_test(es_administrador)
+def eliminar_alumno(request, pk):
+
+    alumno = get_object_or_404(
+        Alumno,
+        pk=pk
+    )
+
+    if alumno.armamentos.exists():
+
+        messages.error(
+            request,
+            "No puede eliminar un alumno que tiene armamentos asignados."
+        )
+
+        return redirect("lista_alumnos")
+
+    if request.method == "POST":
+
+        alumno.delete()
+
+        messages.success(
+            request,
+            "Alumno eliminado correctamente."
+        )
+
+        return redirect("lista_alumnos")
+
+    return render(
+        request,
+        "inventario/alumnos/eliminar.html",
+        {
+            "objeto": alumno,
+            "titulo": "Eliminar Alumno"
         }
     )

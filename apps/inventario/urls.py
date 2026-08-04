@@ -192,4 +192,53 @@ urlpatterns = [
         name="reporte_armamentos",
     ),
 
+#Promocion
+    path(
+        "promociones/",
+        views.lista_promociones,
+        name="lista_promociones"
+    ),
+
+    path(
+        "promociones/nuevo/",
+        views.crear_promocion,
+        name="crear_promocion"
+    ),
+
+    path(
+        "promociones/<int:pk>/editar/",
+        views.editar_promocion,
+        name="editar_promocion"
+    ),
+
+    path(
+        "promociones/<int:pk>/eliminar/",
+        views.eliminar_promocion,
+        name="eliminar_promocion"
+    ),
+#Alumno
+    path(
+        "alumnos/",
+        views.lista_alumnos,
+        name="lista_alumnos"
+    ),
+
+    path(
+        "alumnos/nuevo/",
+        views.crear_alumno,
+        name="crear_alumno"
+    ),
+
+    path(
+        "alumnos/<int:pk>/editar/",
+        views.editar_alumno,
+        name="editar_alumno"
+    ),
+
+    path(
+        "alumnos/<int:pk>/eliminar/",
+        views.eliminar_alumno,
+        name="eliminar_alumno"
+    ),
+
 ]
