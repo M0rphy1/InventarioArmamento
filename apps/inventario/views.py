@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento, Promocion, Alumno
-from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm, FinalizarMantenimientoForm, ReporteArmamentoForm, PromocionForm, AlumnoForm
+from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm, FinalizarMantenimientoForm, ReporteArmamentoForm, PromocionForm, AlumnoForm, ReporteAlumnoForm
 from django.contrib import messages
 
 from django.core.paginator import Paginator
@@ -643,6 +643,8 @@ from .reportes.ubicaciones_pdf import generar_reporte_ubicaciones_pdf
 from .reportes.tipos_pdf import generar_reporte_tipos_pdf
 from .reportes.movimientos_pdf import generar_reporte_movimientos_pdf
 from .reportes.mantenimientos_pdf import generar_reporte_mantenimientos_pdf
+from .reportes.promociones_pdf import generar_reporte_promociones_pdf
+from .reportes.alumnos_pdf import generar_reporte_alumnos_pdf
 
 #Reporte de armamentos
 @login_required
@@ -747,6 +749,29 @@ def reporte_movimientos_pdf(request):
 
 def reporte_mantenimientos_pdf(request):
     return generar_reporte_mantenimientos_pdf(request)
+
+def reporte_promociones_pdf(request):
+    return generar_reporte_promociones_pdf(request)
+
+@login_required
+def reporte_alumnos_pdf(request):
+
+    alumnos = Alumno.objects.select_related(
+        "promocion"
+    )
+
+    promocion = request.GET.get("promocion")
+
+    if promocion:
+
+        alumnos = alumnos.filter(
+            promocion_id=promocion
+        )
+
+    return generar_reporte_alumnos_pdf(
+        request,
+        alumnos
+    )
 
 #Mantenimiento
 @login_required
@@ -1016,6 +1041,19 @@ def reporte_armamentos(request):
     return render(
         request,
         "inventario/reportes/armamentos_filtro.html",
+        {
+            "form": form
+        }
+    )
+
+@login_required
+def reporte_alumnos(request):
+
+    form = ReporteAlumnoForm()
+
+    return render(
+        request,
+        "inventario/reportes/alumnos_filtro.html",
         {
             "form": form
         }

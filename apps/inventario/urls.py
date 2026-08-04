@@ -154,6 +154,18 @@ urlpatterns = [
             name="reporte_mantenimientos_pdf",
         ),
 
+    path(
+        "reportes/promociones/pdf/",
+        views.reporte_promociones_pdf,
+        name="reporte_promociones_pdf",
+    ),
+
+    path(
+        "reportes/alumnos/pdf/",
+        views.reporte_alumnos_pdf,
+        name="reporte_alumnos_pdf",
+    ),
+
 #mantenimiento
     path(
         "mantenimientos/",
@@ -190,6 +202,12 @@ urlpatterns = [
         "reportes/armamentos/",
         views.reporte_armamentos,
         name="reporte_armamentos",
+    ),
+
+    path(
+        "reportes/alumnos/",
+        views.reporte_alumnos,
+        name="reporte_alumnos",
     ),
 
 #Promocion

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Generar Reporte de Alumnos
+{% endblock %}
+
+{% block contenido %}
+
+<div class="container mt-4">
+
+    <div class="card shadow">
+
+        <div class="card-header">
+
+            <h3>
+
+                Generar Reporte de Alumnos
+
+            </h3>
+
+        </div>
+
+        <div class="card-body">
+
+            <form
+                method="GET"
+                action="{% url 'reporte_alumnos_pdf' %}">
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+
+                        Buscar por
+
+                    </label>
+
+                    <select
+                        id="tipoFiltro"
+                        class="form-select">
+
+                        <option value="">
+
+                            Reporte General
+
+                        </option>
+
+                        <option value="promocion">
+
+                            Promoción
+
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div
+                    id="filtroPromocion"
+                    class="mb-3 d-none">
+
+                    <label class="form-label">
+
+                        Promoción
+
+                    </label>
+
+                    {{ form.promocion }}
+
+                </div>
+
+                <hr>
+
+                <button
+                    class="btn btn-danger">
+
+                    <i class="bi bi-file-earmark-pdf"></i>
+
+                    Generar PDF
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+
+const selector = document.getElementById("tipoFiltro");
+
+const promocion = document.getElementById("filtroPromocion");
+
+selector.addEventListener("change", function(){
+
+    promocion.classList.add("d-none");
+
+    if(this.value==="promocion"){
+
+        promocion.classList.remove("d-none");
+
+    }
+
+});
+
+</script>
+
+{% endblock %}

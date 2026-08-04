@@ -677,3 +677,22 @@ class AlumnoForm(forms.ModelForm):
     def clean_apellidos(self):
 
         return self.cleaned_data["apellidos"].strip().upper()
+
+class ReporteAlumnoForm(forms.Form):
+
+    promocion = forms.ModelChoiceField(
+
+        queryset=Promocion.objects.filter(
+            activa=True
+        ).order_by("nombre"),
+
+        required=False,
+
+        empty_label="Todas las promociones",
+
+        widget=forms.Select(
+            attrs={
+                "class": "form-select"
+            }
+        )
+    )
