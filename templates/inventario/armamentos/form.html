@@ -21,9 +21,16 @@
 
     <div class="card-body">
 
-        <form method="POST">
+        <form method="POST" id="formArmamento">
 
             {% csrf_token %}
+
+            <input
+                type="hidden"
+                name="confirmado"
+                id="confirmado"
+                value=""
+            >
 
             <div class="row">
 
@@ -106,5 +113,62 @@
     </div>
 
 </div>
+{% if confirmar_duenio %}
 
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    console.log("Entró al SweetAlert");
+
+    Swal.fire({
+
+        icon: "warning",
+
+        title: "Alumno con armamento asignado",
+
+        html: `
+            <p>
+                <strong>{{ arma_existente.duenio }}</strong>
+                ya tiene registrado el armamento:
+            </p>
+
+            <h4 class="text-primary">
+                {{ arma_existente.codigo }}
+            </h4>
+
+            <p>
+                ¿Desea asignarle otro armamento?
+            </p>
+        `,
+
+        showCancelButton: true,
+
+        confirmButtonText: "Sí, continuar",
+
+        cancelButtonText: "Cancelar",
+
+        confirmButtonColor: "#198754",
+
+        cancelButtonColor: "#6c757d",
+
+        allowOutsideClick: false
+
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+
+            document.getElementById("confirmado").value = "1";
+
+            document.getElementById("formArmamento").submit();
+
+        }
+
+    });
+
+});
+
+</script>
+
+{% endif %}
 {% endblock %}

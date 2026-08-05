@@ -146,7 +146,11 @@ class ResponsableForm(forms.ModelForm):
                 "class": "form-select"
             }),
             "cedula": forms.TextInput(attrs={
-                "class": "form-control"
+                "class": "form-control",
+                "inputmode": "numeric",
+                "pattern": "[0-9]{10}",
+                "maxlength": "10",
+                "oninput": "this.value=this.value.replace(/[^0-9]/g,'')",
             }),
             "nombres": forms.TextInput(attrs={
                 "class": "form-control"
@@ -633,7 +637,11 @@ class AlumnoForm(forms.ModelForm):
             }),
 
             "cedula": forms.TextInput(attrs={
-                "class": "form-control"
+                "class": "form-control",
+                "inputmode": "numeric",
+                "pattern": "[0-9]{10}",
+                "maxlength": "10",
+                "oninput": "this.value=this.value.replace(/[^0-9]/g,'')",
             }),
 
             "nombres": forms.TextInput(attrs={

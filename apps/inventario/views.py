@@ -215,11 +215,45 @@ def crear_armamento(request):
 
             print("Estado enviado por el formulario:", form.cleaned_data["estado"])
 
+            duenio = form.cleaned_data.get("duenio")
+
+            confirmado = request.POST.get("confirmado")
+            print("Dueño seleccionado:", duenio)
+            print("Confirmado:", confirmado)
+
+            arma_existente = None
+
+            if duenio:
+                arma_existente = Armamento.objects.filter(
+                    duenio=duenio
+                ).first()
+
+            print("Arma encontrada:", arma_existente)
+
+            if duenio and not confirmado:
+
+                arma_existente = Armamento.objects.filter(
+                    duenio=duenio
+                ).first()
+
+                if arma_existente:
+
+                    return render(
+                        request,
+                        "inventario/armamentos/form.html",
+                        {
+                            "form": form,
+                            "titulo": "Nuevo Armamento",
+                            "confirmar_duenio": True,
+                            "arma_existente": arma_existente,
+                        }
+                    )
+
             armamento = form.save(commit=False)
 
             print("Estado antes de guardar:", armamento.estado)
 
-            armamento = form.save()
+            armamento.save()
 
             print("Estado después de guardar:", armamento.estado)
 
