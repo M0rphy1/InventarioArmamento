@@ -324,6 +324,10 @@ class MantenimientoForm(forms.ModelForm):
                 "class": "form-control"
             }),
 
+            "responsable_armerillo": forms.Select(attrs={
+                "class": "form-select"
+            }),
+
             "descripcion": forms.Textarea(attrs={
                 "class": "form-control",
                 "rows": 4
@@ -340,6 +344,7 @@ class MantenimientoForm(forms.ModelForm):
 
         self.fields["fecha_ingreso"].widget.attrs["min"] = hoy.isoformat()
         self.fields["fecha_ingreso"].widget.attrs["max"] = maximo.isoformat()
+        self.fields["responsable_armerillo"].disabled = True
 
 
     def clean_fecha_ingreso(self):
@@ -410,17 +415,13 @@ class FinalizarMantenimientoForm(forms.ModelForm):
                 "class": "form-select"
             }),
 
-            "responsable_destino": forms.Select(attrs={
-                "class": "form-select"
-            }),
-
             "descripcion": forms.Textarea(attrs={
                 "class": "form-control",
                 "rows": 4
             }),
 
-            "responsable_armerillo": forms.TextInput(attrs={
-                "class": "form-control"
+            "responsable_armerillo": forms.Select(attrs={
+                "class": "form-select"
             }),
 
         }
@@ -438,6 +439,9 @@ class FinalizarMantenimientoForm(forms.ModelForm):
 
         self.fields["fecha_salida"].widget.attrs["min"] = hoy.isoformat()
         self.fields["fecha_salida"].widget.attrs["max"] = maximo.isoformat()
+        if self.instance and self.instance.pk:
+            self.fields["responsable_armerillo"].initial = self.instance.responsable_armerillo
+            self.fields["responsable_armerillo"].disabled = True
 
     def clean_fecha_salida(self):
 

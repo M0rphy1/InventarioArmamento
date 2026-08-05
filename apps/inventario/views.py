@@ -838,6 +838,11 @@ def crear_mantenimiento(request):
             # Todo mantenimiento nuevo inicia en proceso
             mantenimiento.estado = "EN_PROCESO"
 
+            # Guardar el responsable actual del armamento
+            mantenimiento.responsable_armerillo = (
+            mantenimiento.armamento.responsable
+)
+
             armamento = mantenimiento.armamento
 
             # Guardamos los datos anteriores

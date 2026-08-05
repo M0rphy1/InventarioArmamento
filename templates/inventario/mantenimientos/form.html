@@ -18,6 +18,10 @@
 
     <div class="row">
 
+        {% if form.armamento %}
+
+        <!-- CREAR MANTENIMIENTO -->
+
         <div class="col-md-6 mb-3">
 
             <label>Armamento</label>
@@ -47,93 +51,105 @@
         </div>
 
         <div class="col-md-6 mb-3">
-
             <label>Fecha de ingreso</label>
             {{ form.fecha_ingreso }}
-
         </div>
 
         <div class="col-md-6 mb-3">
-
             <label>Responsable del armerillo</label>
             {{ form.responsable_armerillo }}
-
         </div>
 
         <div class="col-md-6 mb-3">
-
             <label>Motivo</label>
             {{ form.motivo }}
-
         </div>
 
         <div class="col-12 mb-3">
-
             <label>Descripción</label>
             {{ form.descripcion }}
-
         </div>
+
+        {% else %}
+
+        <!-- EDITAR / FINALIZAR -->
+
+        <div class="col-md-6 mb-3">
+            <label>Estado</label>
+            {{ form.estado }}
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label>Fecha de salida</label>
+            {{ form.fecha_salida }}
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label>Ubicación destino</label>
+            {{ form.ubicacion_destino }}
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label>Responsable del armerillo</label>
+            {{ form.responsable_armerillo }}
+        </div>
+
+        <div class="col-12 mb-3">
+            <label>Descripción</label>
+            {{ form.descripcion }}
+        </div>
+
+        {% endif %}
 
     </div>
 
     <button class="btn btn-success">
-
         Guardar
-
     </button>
 
-    <a href="{% url 'lista_mantenimientos' %}"
-       class="btn btn-secondary">
-
+    <a href="{% url 'lista_mantenimientos' %}" class="btn btn-secondary">
         Cancelar
-
     </a>
 
 </form>
 <script>
 const armamento = document.getElementById("id_armamento");
-const responsable = document.getElementById("id_responsable_armerillo");
 
-armamento.addEventListener("change", function () {
+if (armamento) {
 
-    if (!this.value){
+    const responsable = document.getElementById("id_responsable_armerillo");
 
-        responsable.value = "";
+    armamento.addEventListener("change", function () {
 
-        document.getElementById("info_armamento").style.display="none";
+        if (!this.value){
 
-        return;
+            responsable.value = "";
 
-    }
+            document.getElementById("info_armamento").style.display="none";
 
-    fetch(`/inventario/armamentos/${this.value}/responsable/`)
+            return;
 
-        .then(response => response.json())
+        }
 
-        .then(data => {
+        fetch(`/inventario/armamentos/${this.value}/responsable/`)
+            .then(response => response.json())
+            .then(data => {
 
-            responsable.value = data.responsable_id;
+                responsable.value = data.responsable_id;
 
-            document.getElementById("info_armamento").style.display="block";
+                document.getElementById("info_armamento").style.display="block";
 
-            document.getElementById("codigo_info").textContent =
-                data.codigo;
+                document.getElementById("codigo_info").textContent = data.codigo;
+                document.getElementById("duenio_info").textContent = data.duenio;
+                document.getElementById("promocion_info").textContent = data.promocion;
+                document.getElementById("ubicacion_info").textContent = data.ubicacion;
+                document.getElementById("estado_info").textContent = data.estado;
 
-            document.getElementById("duenio_info").textContent =
-                data.duenio;
+            });
 
-            document.getElementById("promocion_info").textContent =
-                data.promocion;
+    });
 
-            document.getElementById("ubicacion_info").textContent =
-                data.ubicacion;
-
-            document.getElementById("estado_info").textContent =
-                data.estado;
-
-        });
-
-});
+}
 </script>
 
 {% endblock %}
