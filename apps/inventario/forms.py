@@ -708,3 +708,41 @@ class ReporteAlumnoForm(forms.Form):
             }
         )
     )
+
+#Import excel
+class ImportarMatrizAlumnosForm(forms.Form):
+
+    promocion = forms.ModelChoiceField(
+        queryset=Promocion.objects.filter(
+            activa=True
+        ),
+        label="Promoción",
+        empty_label="Seleccione una promoción",
+        widget=forms.Select(
+            attrs={
+                "class": "form-select"
+            }
+        )
+    )
+
+    archivo = forms.FileField(
+        label="Archivo Excel",
+        widget=forms.ClearableFileInput(
+            attrs={
+                "class": "form-control",
+                "accept": ".xlsx"
+            }
+        )
+    )
+
+    def clean_archivo(self):
+
+        archivo = self.cleaned_data["archivo"]
+
+        if not archivo.name.lower().endswith(".xlsx"):
+
+            raise forms.ValidationError(
+                "El archivo debe estar en formato Excel (.xlsx)."
+            )
+
+        return archivo

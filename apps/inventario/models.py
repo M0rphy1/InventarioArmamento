@@ -114,6 +114,20 @@ class Alumno(models.Model):
         max_length=100
     )
 
+    especialidad = models.CharField(
+        max_length=50,
+        blank=True
+    )
+
+    grado = models.CharField(
+        max_length=30,
+        blank=True
+    )
+
+    novedades = models.TextField(
+        blank=True
+    )
+
     activo = models.BooleanField(
         default=True
     )

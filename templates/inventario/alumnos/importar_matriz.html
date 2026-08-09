@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Importar matriz de alumnos
+{% endblock %}
+
+{% block contenido %}
+
+<div class="card shadow">
+
+    <div class="card-header">
+        <h3 class="mb-0">
+            Importar matriz de alumnos
+        </h3>
+    </div>
+
+    <div class="card-body">
+
+        <div class="alert alert-info">
+
+            <strong>Importación de alumnos</strong>
+
+            <p class="mb-0 mt-2">
+                Seleccione la promoción y cargue el archivo Excel
+                correspondiente a la matriz de alumnos.
+            </p>
+
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+
+            {% csrf_token %}
+
+            {% if form.errors %}
+
+                <div class="alert alert-danger">
+
+                    <strong>Existen errores:</strong>
+
+                    {{ form.errors }}
+
+                </div>
+
+            {% endif %}
+
+            <div class="row">
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Promoción
+                    </label>
+
+                    {{ form.promocion }}
+
+                </div>
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+                        Archivo Excel
+                    </label>
+
+                    {{ form.archivo }}
+
+                    <div class="form-text">
+                        Formato permitido: .xlsx
+                    </div>
+
+                </div>
+
+            </div>
+
+            <hr>
+
+            <button
+                type="submit"
+                class="btn btn-primary">
+
+                Vista previa
+
+            </button>
+
+            <a
+                href="{% url 'descargar_plantilla_matriz' %}"
+                class="btn btn-success"
+            >
+                Descargar plantilla Excel
+            </a>
+
+            <a
+                href="{% url 'lista_alumnos' %}"
+                class="btn btn-secondary">
+
+                Cancelar
+
+            </a>
+
+        </form>
+
+        {% if archivo_recibido %}
+
+            <hr>
+
+            <div class="alert alert-success">
+
+                <h5>
+                    Archivo leído correctamente
+                </h5>
+
+                <p class="mb-1">
+                    <strong>Promoción:</strong>
+                    {{ promocion }}
+                </p>
+
+                <p class="mb-1">
+                    <strong>Archivo:</strong>
+                    {{ archivo.name }}
+                </p>
+
+                <p class="mb-0">
+                    <strong>Total de registros:</strong>
+                    {{ total_registros }}
+                </p>
+
+            </div>
+
+            {% if registros %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-bordered table-striped table-sm">
+
+                        <thead>
+
+                            <tr>
+                                <th>Fila</th>
+                                <th>ORD</th>
+                                <th>Especialidad</th>
+                                <th>Grado</th>
+                                <th>Apellido Nombre</th>
+                                <th>Cédula</th>
+                                <th>N° Fusil</th>
+                                <th>Novedades</th>
+                                <th>N.º Serie</th>
+                                <th>Tipo</th>
+                                <th>Marca</th>
+                                <th>Modelo</th>
+                                <th>Calibre</th>
+                                <th>Estado</th>
+                                <th>Ubicación</th>
+                                <th>Responsable</th>
+                                <th>Observaciones</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for registro in registros %}
+
+                                <tr>
+
+                                    <td>{{ registro.fila }}</td>
+                                    <td>{{ registro.ord }}</td>
+                                    <td>{{ registro.especialidad }}</td>
+                                    <td>{{ registro.grado }}</td>
+                                    <td>{{ registro.apellido_nombre }}</td>
+                                    <td>{{ registro.cedula }}</td>
+                                    <td>{{ registro.codigo }}</td>
+                                    <td>{{ registro.novedades }}</td>
+                                    <td>{{ registro.numero_serie }}</td>
+                                    <td>{{ registro.tipo }}</td>
+                                    <td>{{ registro.marca }}</td>
+                                    <td>{{ registro.modelo }}</td>
+                                    <td>{{ registro.calibre }}</td>
+                                    <td>{{ registro.estado }}</td>
+                                    <td>{{ registro.ubicacion }}</td>
+                                    <td>{{ registro.responsable }}</td>
+                                    <td>{{ registro.observaciones }}</td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% endif %}
+
+            {% if archivo_recibido and registros %}
+
+                <hr>
+
+                <form method="POST">
+
+                    {% csrf_token %}
+
+                    <input
+                        type="hidden"
+                        name="confirmar_importacion"
+                        value="1"
+                    >
+
+                    <button
+                        type="submit"
+                        class="btn btn-success">
+
+                        Confirmar importación
+
+                    </button>
+
+                </form>
+
+            {% endif %}
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

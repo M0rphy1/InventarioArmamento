@@ -258,5 +258,16 @@ urlpatterns = [
         views.eliminar_alumno,
         name="eliminar_alumno"
     ),
+#Excel
+    path(
+        "alumnos/importar/",
+        views.importar_matriz_alumnos,
+        name="importar_matriz_alumnos"
+    ),
 
+    path(
+        "alumnos/plantilla-excel/",
+        views.descargar_plantilla_matriz,
+        name="descargar_plantilla_matriz"
+    ),
 ]

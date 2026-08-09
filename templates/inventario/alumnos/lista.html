@@ -14,23 +14,63 @@ Alumnos
 
 <div class="mb-3 d-flex justify-content-between">
 
-    <form method="GET" class="d-flex">
+<form method="GET" class="row g-2 mb-3">
 
+    <!-- Buscar -->
+    <div class="col-md-4">
         <input
             type="text"
             name="buscar"
             value="{{ buscar }}"
-            class="form-control me-2"
-            placeholder="Buscar alumno">
+            class="form-control form-control-sm"
+            placeholder="Buscar alumno..."
+        >
+    </div>
+
+    <!-- Promoción -->
+    <div class="col-md-4">
+        <select
+            name="promocion"
+            class="form-select form-select-sm"
+        >
+            <option value="">
+                Todas las promociones
+            </option>
+
+            {% for promocion in promociones %}
+                <option
+                    value="{{ promocion.id }}"
+                    {% if promocion_seleccionada == promocion.id|stringformat:"s" %}
+                        selected
+                    {% endif %}
+                >
+                    {{ promocion.nombre }}
+                </option>
+            {% endfor %}
+
+        </select>
+    </div>
+
+    <!-- Botones -->
+    <div class="col-md-4 d-flex gap-2">
 
         <button
-            class="btn btn-primary">
-
-            Buscar
-
+            type="submit"
+            class="btn btn-primary btn-sm"
+        >
+            Filtrar
         </button>
 
-    </form>
+        <a
+            href="{% url 'lista_alumnos' %}"
+            class="btn btn-secondary btn-sm"
+        >
+            Limpiar
+        </a>
+
+    </div>
+
+</form>
 
     <a href="{% url 'reporte_alumnos' %}"
         class="btn btn-danger">
@@ -45,6 +85,13 @@ Alumnos
 
         Nuevo Alumno
 
+    </a>
+
+    <a
+        href="{% url 'importar_matriz_alumnos' %}"
+        class="btn btn-info">
+
+        Importar Matriz
     </a>
 
 </div>

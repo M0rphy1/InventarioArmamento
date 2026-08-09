@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento, Promocion, Alumno
-from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm, FinalizarMantenimientoForm, ReporteArmamentoForm, PromocionForm, AlumnoForm, ReporteAlumnoForm
+from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm, FinalizarMantenimientoForm, ReporteArmamentoForm, PromocionForm, AlumnoForm, ReporteAlumnoForm, ImportarMatrizAlumnosForm
 from django.contrib import messages
 
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.db import transaction
+from openpyxl import load_workbook
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .utils import registrar_movimiento
 
@@ -1290,11 +1291,13 @@ def eliminar_promocion(request, pk):
 def lista_alumnos(request):
 
     buscar = request.GET.get("buscar", "")
+    promocion_id = request.GET.get("promocion", "")
 
     alumnos = Alumno.objects.select_related(
         "promocion"
     )
 
+    # Filtro de búsqueda
     if buscar:
 
         alumnos = alumnos.filter(
@@ -1304,6 +1307,19 @@ def lista_alumnos(request):
             Q(promocion__nombre__icontains=buscar)
         )
 
+    # Filtro por promoción
+    if promocion_id:
+
+        alumnos = alumnos.filter(
+            promocion_id=promocion_id
+        )
+
+    # Promociones disponibles para el selector
+    promociones = Promocion.objects.filter(
+        activa=True
+    )
+
+    # Paginación
     paginator = Paginator(alumnos, 10)
 
     page_number = request.GET.get("page")
@@ -1316,6 +1332,8 @@ def lista_alumnos(request):
         {
             "page_obj": page_obj,
             "buscar": buscar,
+            "promociones": promociones,
+            "promocion_seleccionada": promocion_id,
         }
     )
 
@@ -1428,3 +1446,809 @@ def eliminar_alumno(request, pk):
             "titulo": "Eliminar Alumno"
         }
     )
+
+#Import excel
+def separar_apellido_nombre(texto):
+
+    texto = " ".join(str(texto).strip().split())
+
+    partes = texto.split()
+
+    if len(partes) < 2:
+        raise ValueError(
+            "El campo APELLIDO NOMBRE debe contener al menos "
+            "un apellido y un nombre."
+        )
+
+    if len(partes) == 2:
+
+        apellidos = partes[0]
+        nombres = partes[1]
+
+    elif len(partes) == 3:
+
+        apellidos = " ".join(partes[:2])
+        nombres = partes[2]
+
+    else:
+
+        apellidos = " ".join(partes[:2])
+        nombres = " ".join(partes[2:])
+
+    return apellidos, nombres
+@login_required
+@user_passes_test(es_administrador)
+def importar_matriz_alumnos(request):
+
+    # ==========================================================
+    # CONFIRMAR IMPORTACIÓN
+    # ==========================================================
+
+    if request.method == "POST" and request.POST.get(
+        "confirmar_importacion"
+    ) == "1":
+
+        registros = request.session.get(
+            "matriz_alumnos_registros"
+        )
+
+        promocion_id = request.session.get(
+            "matriz_alumnos_promocion"
+        )
+
+        if not registros or not promocion_id:
+
+            messages.error(
+                request,
+                "No existe una matriz pendiente de importación."
+            )
+
+            return redirect("importar_matriz_alumnos")
+
+        try:
+
+            promocion = Promocion.objects.get(
+                id=promocion_id,
+                activa=True
+            )
+
+        except Promocion.DoesNotExist:
+
+            messages.error(
+                request,
+                "La promoción seleccionada ya no existe o está inactiva."
+            )
+
+            return redirect("importar_matriz_alumnos")
+
+        try:
+
+            with transaction.atomic():
+
+                alumnos_creados = 0
+                armamentos_creados = 0
+
+                for registro in registros:
+
+                    fila = registro["fila"]
+
+                    # ==================================================
+                    # DATOS DEL ALUMNO
+                    # ==================================================
+
+                    cedula = registro["cedula"]
+
+                    if not cedula:
+
+                        raise ValueError(
+                            f"Fila {fila}: la cédula está vacía."
+                        )
+
+                    if len(cedula) != 10 or not cedula.isdigit():
+
+                        raise ValueError(
+                            f"Fila {fila}: la cédula "
+                            f"'{cedula}' no es válida."
+                        )
+
+                    # Verificar cédula duplicada
+
+                    if Alumno.objects.filter(
+                        cedula=cedula
+                    ).exists():
+
+                        raise ValueError(
+                            f"Fila {fila}: la cédula "
+                            f"'{cedula}' ya existe."
+                        )
+
+                    # ==================================================
+                    # SEPARAR APELLIDO Y NOMBRE
+                    # ==================================================
+
+                    apellido_nombre = registro[
+                        "apellido_nombre"
+                    ]
+
+                    try:
+
+                        apellidos, nombres = (
+                            separar_apellido_nombre(
+                                apellido_nombre
+                            )
+                        )
+
+                    except ValueError as e:
+
+                        raise ValueError(
+                            f"Fila {fila}: {e}"
+                        )
+
+                    # ==================================================
+                    # CREAR ALUMNO
+                    # ==================================================
+
+                    alumno = Alumno.objects.create(
+
+                        promocion=promocion,
+
+                        cedula=cedula,
+
+                        nombres=nombres,
+
+                        apellidos=apellidos,
+
+                        especialidad=registro[
+                            "especialidad"
+                        ],
+
+                        grado=registro[
+                            "grado"
+                        ],
+
+                        novedades=registro[
+                            "novedades"
+                        ],
+
+                        activo=True
+                    )
+
+                    alumnos_creados += 1
+
+                    # ==================================================
+                    # TIPO DE ARMAMENTO
+                    # ==================================================
+
+                    nombre_tipo = registro["tipo"]
+
+                    if not nombre_tipo:
+
+                        raise ValueError(
+                            f"Fila {fila}: el tipo de armamento "
+                            f"está vacío."
+                        )
+
+                    tipo = TipoArmamento.objects.filter(
+                        nombre__iexact=nombre_tipo,
+                        activo=True
+                    ).first()
+
+                    if not tipo:
+
+                        raise ValueError(
+                            f"Fila {fila}: no existe el tipo "
+                            f"de armamento '{nombre_tipo}'."
+                        )
+
+                    # ==================================================
+                    # UBICACIÓN
+                    # ==================================================
+
+                    nombre_ubicacion = registro[
+                        "ubicacion"
+                    ]
+
+                    if not nombre_ubicacion:
+
+                        raise ValueError(
+                            f"Fila {fila}: la ubicación está vacía."
+                        )
+
+                    ubicacion = Ubicacion.objects.filter(
+                        nombre__iexact=nombre_ubicacion,
+                        activo=True
+                    ).first()
+
+                    if not ubicacion:
+
+                        raise ValueError(
+                            f"Fila {fila}: no existe la ubicación "
+                            f"'{nombre_ubicacion}'."
+                        )
+
+                    # ==================================================
+                    # RESPONSABLE
+                    # ==================================================
+
+                    responsable_texto = registro[
+                        "responsable"
+                    ]
+
+                    if not responsable_texto:
+
+                        raise ValueError(
+                            f"Fila {fila}: el responsable "
+                            f"está vacío."
+                        )
+
+                    responsable = None
+
+                    responsables = Responsable.objects.filter(
+                        activo=True
+                    )
+
+                    texto_excel = (
+                        responsable_texto
+                        .strip()
+                        .lower()
+                    )
+
+                    for r in responsables:
+
+                        # Formato: APELLIDOS NOMBRES
+                        nombre_apellidos = (
+                            f"{r.apellidos} {r.nombres}"
+                            .strip()
+                            .lower()
+                        )
+
+                        # Formato: NOMBRES APELLIDOS
+                        nombre_nombres = (
+                            f"{r.nombres} {r.apellidos}"
+                            .strip()
+                            .lower()
+                        )
+
+                        if texto_excel in [
+                            nombre_apellidos,
+                            nombre_nombres,
+                        ]:
+
+                            responsable = r
+                            break
+
+                    if not responsable:
+
+                        raise ValueError(
+                            f"Fila {fila}: no se encontró "
+                            f"el responsable "
+                            f"'{responsable_texto}'."
+                        )
+
+                    # ==================================================
+                    # DATOS DEL ARMAMENTO
+                    # ==================================================
+
+                    codigo = registro["codigo"]
+
+                    numero_serie = registro[
+                        "numero_serie"
+                    ]
+
+                    if not codigo:
+
+                        raise ValueError(
+                            f"Fila {fila}: el código del "
+                            f"armamento está vacío."
+                        )
+
+                    if not numero_serie:
+
+                        raise ValueError(
+                            f"Fila {fila}: el número de serie "
+                            f"está vacío."
+                        )
+
+                    # Verificar código
+
+                    if Armamento.objects.filter(
+                        codigo=codigo
+                    ).exists():
+
+                        raise ValueError(
+                            f"Fila {fila}: el código "
+                            f"'{codigo}' ya existe."
+                        )
+
+                    # Verificar número de serie
+
+                    if Armamento.objects.filter(
+                        numero_serie=numero_serie
+                    ).exists():
+
+                        raise ValueError(
+                            f"Fila {fila}: el número de serie "
+                            f"'{numero_serie}' ya existe."
+                        )
+
+                    # ==================================================
+                    # ESTADO
+                    # ==================================================
+
+                    estado = registro[
+                        "estado"
+                    ].upper().strip()
+
+                    estados_validos = [
+                        "OPERABLE",
+                        "MANTENIMIENTO",
+                        "NO_OPERABLE",
+                    ]
+
+                    if estado not in estados_validos:
+
+                        raise ValueError(
+                            f"Fila {fila}: el estado "
+                            f"'{estado}' no es válido. "
+                            f"Valores permitidos: "
+                            f"{', '.join(estados_validos)}."
+                        )
+
+                    # ==================================================
+                    # CREAR ARMAMENTO
+                    # ==================================================
+
+                    Armamento.objects.create(
+
+                        codigo=codigo,
+
+                        numero_serie=numero_serie,
+
+                        tipo=tipo,
+
+                        marca=registro[
+                            "marca"
+                        ],
+
+                        modelo=registro[
+                            "modelo"
+                        ],
+
+                        calibre=registro[
+                            "calibre"
+                        ],
+
+                        estado=estado,
+
+                        ubicacion=ubicacion,
+
+                        duenio=alumno,
+
+                        responsable=responsable,
+
+                        observaciones=registro[
+                            "observaciones"
+                        ],
+
+                        activo=True
+                    )
+
+                    armamentos_creados += 1
+
+            # ======================================================
+            # LIMPIAR SESIÓN
+            # ======================================================
+
+            request.session.pop(
+                "matriz_alumnos_registros",
+                None
+            )
+
+            request.session.pop(
+                "matriz_alumnos_promocion",
+                None
+            )
+
+            messages.success(
+                request,
+                f"Importación completada correctamente. "
+                f"Alumnos creados: {alumnos_creados}. "
+                f"Armamentos creados: {armamentos_creados}."
+            )
+
+            return redirect(
+                "lista_alumnos"
+            )
+
+        except Exception as e:
+
+            messages.error(
+                request,
+                f"No se realizó la importación. {e}"
+            )
+
+            return redirect(
+                "importar_matriz_alumnos"
+            )
+
+    # ==========================================================
+    # VISTA PREVIA
+    # ==========================================================
+
+    if request.method == "POST":
+
+        form = ImportarMatrizAlumnosForm(
+            request.POST,
+            request.FILES
+        )
+
+        if form.is_valid():
+
+            promocion = form.cleaned_data[
+                "promocion"
+            ]
+
+            archivo = form.cleaned_data[
+                "archivo"
+            ]
+
+            try:
+
+                workbook = load_workbook(
+                    archivo,
+                    read_only=True,
+                    data_only=True
+                )
+
+                hoja = workbook.active
+
+                filas = list(
+                    hoja.iter_rows(
+                        values_only=True
+                    )
+                )
+
+                workbook.close()
+
+                if not filas:
+
+                    messages.error(
+                        request,
+                        "El archivo Excel está vacío."
+                    )
+
+                    return render(
+                        request,
+                        "inventario/alumnos/importar_matriz.html",
+                        {
+                            "form": form
+                        }
+                    )
+
+                # ==================================================
+                # ENCABEZADOS
+                # ==================================================
+
+                encabezados = [
+                    str(valor).strip()
+                    if valor is not None
+                    else ""
+                    for valor in filas[0]
+                ]
+
+                encabezados_esperados = [
+                    "ORD",
+                    "ESPECIALIDAD",
+                    "GRADO",
+                    "APELLIDO NOMBRE",
+                    "CEDULA",
+                    "N° FUSIL",
+                    "NOVEDADES",
+                    "NÚMERO DE SERIE",
+                    "TIPO",
+                    "MARCA",
+                    "MODELO",
+                    "CALIBRE",
+                    "ESTADO",
+                    "UBICACIÓN",
+                    "RESPONSABLE",
+                    "OBSERVACIONES",
+                ]
+
+                if encabezados != encabezados_esperados:
+
+                    messages.error(
+                        request,
+                        "Los encabezados del Excel "
+                        "no coinciden con la plantilla."
+                    )
+
+                    return render(
+                        request,
+                        "inventario/alumnos/importar_matriz.html",
+                        {
+                            "form": form,
+                            "encabezados_actuales": encabezados,
+                            "encabezados_esperados":
+                                encabezados_esperados,
+                        }
+                    )
+
+                # ==================================================
+                # LEER REGISTROS
+                # ==================================================
+
+                registros = []
+
+                for numero_fila, fila in enumerate(
+                    filas[1:],
+                    start=2
+                ):
+
+                    if not any(
+                        valor is not None
+                        and str(valor).strip() != ""
+                        for valor in fila
+                    ):
+                        continue
+
+                    datos = dict(
+                        zip(encabezados, fila)
+                    )
+
+                    registro = {
+
+                        "fila": numero_fila,
+
+                        "ord": str(
+                            datos.get("ORD", "")
+                        ).strip(),
+
+                        "especialidad": str(
+                            datos.get("ESPECIALIDAD", "")
+                        ).strip(),
+
+                        "grado": str(
+                            datos.get("GRADO", "")
+                        ).strip(),
+
+                        "apellido_nombre": str(
+                            datos.get("APELLIDO NOMBRE", "")
+                        ).strip(),
+
+                        "cedula": str(
+                            datos.get("CEDULA", "")
+                        ).strip(),
+
+                        "codigo": str(
+                            datos.get("N° FUSIL", "")
+                        ).strip(),
+
+                        "novedades": str(
+                            datos.get("NOVEDADES", "")
+                        ).strip(),
+
+                        "numero_serie": str(
+                            datos.get("NÚMERO DE SERIE", "")
+                        ).strip(),
+
+                        "tipo": str(
+                            datos.get("TIPO", "")
+                        ).strip(),
+
+                        "marca": str(
+                            datos.get("MARCA", "")
+                        ).strip(),
+
+                        "modelo": str(
+                            datos.get("MODELO", "")
+                        ).strip(),
+
+                        "calibre": str(
+                            datos.get("CALIBRE", "")
+                        ).strip(),
+
+                        "estado": str(
+                            datos.get("ESTADO", "")
+                        ).strip().upper(),
+
+                        "ubicacion": str(
+                            datos.get("UBICACIÓN", "")
+                        ).strip(),
+
+                        "responsable": str(
+                            datos.get("RESPONSABLE", "")
+                        ).strip(),
+
+                        "observaciones": str(
+                            datos.get("OBSERVACIONES", "")
+                        ).strip(),
+                    }
+
+                    registros.append(
+                        registro
+                    )
+
+                # ==================================================
+                # GUARDAR VISTA PREVIA EN SESIÓN
+                # ==================================================
+
+                request.session[
+                    "matriz_alumnos_registros"
+                ] = registros
+
+                request.session[
+                    "matriz_alumnos_promocion"
+                ] = promocion.id
+
+                return render(
+                    request,
+                    "inventario/alumnos/importar_matriz.html",
+                    {
+                        "form": form,
+                        "promocion": promocion,
+                        "archivo": archivo,
+                        "archivo_recibido": True,
+                        "registros": registros,
+                        "total_registros": len(
+                            registros
+                        ),
+                    }
+                )
+
+            except Exception as e:
+
+                messages.error(
+                    request,
+                    f"Error al leer el archivo Excel: {e}"
+                )
+
+    else:
+
+        form = ImportarMatrizAlumnosForm()
+
+    return render(
+        request,
+        "inventario/alumnos/importar_matriz.html",
+        {
+            "form": form
+        }
+    )
+#MAtriz excel
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+
+def descargar_plantilla_matriz(request):
+
+    workbook = Workbook()
+
+    hoja = workbook.active
+    hoja.title = "Matriz de Alumnos"
+
+    encabezados = [
+        "ORD",
+        "ESPECIALIDAD",
+        "GRADO",
+        "APELLIDO NOMBRE",
+        "CEDULA",
+        "N° FUSIL",
+        "NOVEDADES",
+        "NÚMERO DE SERIE",
+        "TIPO",
+        "MARCA",
+        "MODELO",
+        "CALIBRE",
+        "ESTADO",
+        "UBICACIÓN",
+        "RESPONSABLE",
+        "OBSERVACIONES",
+    ]
+
+    hoja.append(encabezados)
+
+    # Formato de encabezados
+    for celda in hoja[1]:
+        celda.font = Font(bold=True)
+        celda.alignment = Alignment(
+            horizontal="center",
+            vertical="center"
+        )
+
+    # Ancho de columnas
+    anchos = [
+        8, 18, 15, 28, 14, 18, 22, 22,
+        18, 15, 15, 15, 18, 22, 30, 30
+    ]
+
+    for numero, ancho in enumerate(anchos, start=1):
+        hoja.column_dimensions[
+            get_column_letter(numero)
+        ].width = ancho
+
+    # Congelar encabezados
+    hoja.freeze_panes = "A2"
+
+    # Filtro
+    hoja.auto_filter.ref = "A1:P1"
+
+    # Segunda hoja con instrucciones
+    instrucciones = workbook.create_sheet(
+        "Instrucciones"
+    )
+
+    instrucciones.append([
+        "INSTRUCCIONES PARA LA IMPORTACIÓN"
+    ])
+
+    instrucciones.append([
+        "No cambie los nombres de los encabezados de la hoja "
+        "'Matriz de Alumnos'."
+    ])
+
+    instrucciones.append([
+        "Complete una fila por cada alumno y su armamento."
+    ])
+
+    instrucciones.append([
+        "APELLIDO NOMBRE",
+        "Escriba primero los apellidos y después los nombres."
+    ])
+
+    instrucciones.append([
+        "CEDULA",
+        "Debe contener 10 dígitos."
+    ])
+
+    instrucciones.append([
+        "N° FUSIL",
+        "Código único del armamento."
+    ])
+
+    instrucciones.append([
+        "TIPO",
+        "Debe coincidir con un tipo de armamento registrado."
+    ])
+
+    instrucciones.append([
+        "UBICACIÓN",
+        "Debe coincidir con una ubicación registrada."
+    ])
+
+    instrucciones.append([
+        "RESPONSABLE",
+        "Debe coincidir con un responsable registrado."
+    ])
+
+    instrucciones.append([
+        "ESTADO",
+        "OPERABLE, MANTENIMIENTO o NO_OPERABLE."
+    ])
+
+    instrucciones.column_dimensions["A"].width = 30
+    instrucciones.column_dimensions["B"].width = 90
+
+    instrucciones["A1"].font = Font(
+        bold=True,
+        size=14
+    )
+
+    # Preparar respuesta
+    respuesta = HttpResponse(
+        content_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        )
+    )
+
+    respuesta[
+        "Content-Disposition"
+    ] = (
+        'attachment; '
+        'filename="plantilla_matriz_alumnos_armamentos.xlsx"'
+    )
+
+    workbook.save(respuesta)
+
+    return respuesta
