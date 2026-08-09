@@ -270,4 +270,9 @@ urlpatterns = [
         views.descargar_plantilla_matriz,
         name="descargar_plantilla_matriz"
     ),
+    path(
+        "armamentos/inactivos/",
+        views.armamentos_inactivos,
+        name="armamentos_inactivos"
+    ),
 ]

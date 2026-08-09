@@ -182,7 +182,52 @@ def lista_armamentos(request):
             "buscar": buscar,
         }
     )
+#Armamento inactivo
+@login_required
+def armamentos_inactivos(request):
 
+    buscar = request.GET.get("buscar", "")
+
+    armamentos = Armamento.objects.filter(
+        activo=False
+    ).select_related(
+        "tipo",
+        "ubicacion",
+        "responsable",
+        "duenio",
+        "duenio__promocion",
+    )
+
+    if buscar:
+
+        armamentos = armamentos.filter(
+            Q(codigo__icontains=buscar) |
+            Q(numero_serie__icontains=buscar) |
+            Q(marca__icontains=buscar) |
+            Q(modelo__icontains=buscar)
+        )
+
+    paginator = Paginator(
+        armamentos,
+        10
+    )
+
+    page_number = request.GET.get("page")
+
+    page_obj = paginator.get_page(
+        page_number
+    )
+
+    return render(
+        request,
+        "inventario/armamentos/inactivos.html",
+        {
+            "page_obj": page_obj,
+            "buscar": buscar,
+        }
+    )
+
+#historial armamento
 @login_required
 def historial_armamento(request, pk):
 
@@ -235,7 +280,8 @@ def crear_armamento(request):
 
             if duenio:
                 arma_existente = Armamento.objects.filter(
-                    duenio=duenio
+                    duenio=duenio,
+                    activo=True
                 ).first()
 
             print("Arma encontrada:", arma_existente)
@@ -243,7 +289,8 @@ def crear_armamento(request):
             if duenio and not confirmado:
 
                 arma_existente = Armamento.objects.filter(
-                    duenio=duenio
+                    duenio=duenio,
+                    activo=True
                 ).first()
 
                 if arma_existente:
@@ -725,11 +772,17 @@ from .reportes.mantenimientos_pdf import generar_reporte_mantenimientos_pdf
 from .reportes.promociones_pdf import generar_reporte_promociones_pdf
 from .reportes.alumnos_pdf import generar_reporte_alumnos_pdf
 
-#Reporte de armamentos
+# Reporte de armamentos
 @login_required
 def reporte_armamentos_pdf(request):
 
-    armamentos = Armamento.objects.select_related(
+    # ==========================================
+    # SOLO ARMAMENTOS ACTIVOS
+    # ==========================================
+
+    armamentos = Armamento.objects.filter(
+        activo=True
+    ).select_related(
         "tipo",
         "ubicacion",
         "responsable",
@@ -737,9 +790,9 @@ def reporte_armamentos_pdf(request):
         "duenio__promocion",
     )
 
-    # ==========================
+    # ==========================================
     # RESPONSABLE
-    # ==========================
+    # ==========================================
 
     responsables = request.GET.getlist("responsables")
 
@@ -749,9 +802,9 @@ def reporte_armamentos_pdf(request):
             responsable_id__in=responsables
         )
 
-    # ==========================
+    # ==========================================
     # ARMAMENTOS
-    # ==========================
+    # ==========================================
 
     armamentos_ids = request.GET.getlist("armamentos")
 
@@ -761,9 +814,9 @@ def reporte_armamentos_pdf(request):
             id__in=armamentos_ids
         )
 
-    # ==========================
+    # ==========================================
     # ESTADO
-    # ==========================
+    # ==========================================
 
     estado = request.GET.get("estado")
 
@@ -773,9 +826,9 @@ def reporte_armamentos_pdf(request):
             estado=estado
         )
 
-    # ==========================
+    # ==========================================
     # UBICACIÓN
-    # ==========================
+    # ==========================================
 
     ubicacion = request.GET.get("ubicacion")
 
@@ -785,9 +838,9 @@ def reporte_armamentos_pdf(request):
             ubicacion_id=ubicacion
         )
 
-    # ==========================
+    # ==========================================
     # TIPO
-    # ==========================
+    # ==========================================
 
     tipo = request.GET.get("tipo")
 
@@ -797,9 +850,9 @@ def reporte_armamentos_pdf(request):
             tipo_id=tipo
         )
 
-    # ==========================
+    # ==========================================
     # PROMOCIÓN
-    # ==========================
+    # ==========================================
 
     promocion = request.GET.get("promocion")
 
@@ -808,6 +861,10 @@ def reporte_armamentos_pdf(request):
         armamentos = armamentos.filter(
             duenio__promocion_id=promocion
         )
+
+    # ==========================================
+    # GENERAR PDF
+    # ==========================================
 
     return generar_reporte_armamentos_pdf(
         request,

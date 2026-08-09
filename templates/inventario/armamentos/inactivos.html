@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Armamentos dados de baja
+{% endblock %}
+
+{% block contenido %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <h2>
+        Armamentos dados de baja
+    </h2>
+
+    <a
+        href="{% url 'lista_armamentos' %}"
+        class="btn btn-primary"
+    >
+        ← Volver a armamentos activos
+    </a>
+
+</div>
+
+<div class="alert alert-warning">
+
+    <strong>Historial de armamentos dados de baja</strong>
+
+    <br>
+
+    Estos armamentos ya no forman parte del inventario activo,
+    pero se conservan como registro histórico.
+
+</div>
+
+<form method="GET" class="row mb-3">
+
+    <div class="col-md-6">
+
+        <input
+            type="text"
+            name="buscar"
+            class="form-control"
+            placeholder="Buscar por código, serie, marca o modelo..."
+            value="{{ buscar }}"
+        >
+
+    </div>
+
+    <div class="col-md-2">
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            Buscar
+        </button>
+
+    </div>
+
+</form>
+
+
+<div class="table-responsive">
+
+    <table class="table table-bordered table-hover">
+
+        <thead class="table-dark">
+
+            <tr>
+
+                <th>Código</th>
+
+                <th>Serie</th>
+
+                <th>Tipo</th>
+
+                <th>Marca</th>
+
+                <th>Modelo</th>
+
+                <th>Dueño</th>
+
+                <th>Ubicación</th>
+
+                <th>Estado</th>
+
+                <th>Situación</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            {% for armamento in page_obj %}
+
+            <tr>
+
+                <td>
+                    {{ armamento.codigo }}
+                </td>
+
+                <td>
+                    {{ armamento.numero_serie }}
+                </td>
+
+                <td>
+                    {{ armamento.tipo }}
+                </td>
+
+                <td>
+                    {{ armamento.marca }}
+                </td>
+
+                <td>
+                    {{ armamento.modelo }}
+                </td>
+
+                <td>
+
+                    {% if armamento.duenio %}
+                        {{ armamento.duenio }}
+                    {% else %}
+                        Sin dueño
+                    {% endif %}
+
+                </td>
+
+                <td>
+                    {{ armamento.ubicacion }}
+                </td>
+
+                <td>
+                    {{ armamento.get_estado_display }}
+                </td>
+
+                <td>
+
+                    <span class="badge bg-danger">
+                        Dado de baja
+                    </span>
+
+                </td>
+
+            </tr>
+
+            {% empty %}
+
+            <tr>
+
+                <td
+                    colspan="9"
+                    class="text-center"
+                >
+                    No existen armamentos dados de baja.
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+{% if page_obj.paginator.num_pages > 1 %}
+
+<nav>
+
+    <ul class="pagination justify-content-center">
+
+        {% if page_obj.has_previous %}
+
+        <li class="page-item">
+
+            <a
+                class="page-link"
+                href="?page={{ page_obj.previous_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}"
+            >
+                Anterior
+            </a>
+
+        </li>
+
+        {% endif %}
+
+
+        <li class="page-item active">
+
+            <span class="page-link">
+                {{ page_obj.number }}
+            </span>
+
+        </li>
+
+
+        {% if page_obj.has_next %}
+
+        <li class="page-item">
+
+            <a
+                class="page-link"
+                href="?page={{ page_obj.next_page_number }}{% if buscar %}&buscar={{ buscar }}{% endif %}"
+            >
+                Siguiente
+            </a>
+
+        </li>
+
+        {% endif %}
+
+    </ul>
+
+</nav>
+
+{% endif %}
+
+{% endblock %}
