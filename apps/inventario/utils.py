@@ -9,6 +9,8 @@ def registrar_movimiento(
     ubicacion_destino=None,
     responsable_anterior=None,
     responsable_nuevo=None,
+    duenio_anterior=None,
+    duenio_nuevo=None,
     estado_anterior=None,
     estado_nuevo=None,
     observacion=""
@@ -27,6 +29,9 @@ def registrar_movimiento(
 
         responsable_anterior=responsable_anterior,
         responsable_nuevo=responsable_nuevo,
+
+        duenio_anterior=duenio_anterior,
+        duenio_nuevo=duenio_nuevo,
 
         estado_anterior=estado_anterior,
         estado_nuevo=estado_nuevo,

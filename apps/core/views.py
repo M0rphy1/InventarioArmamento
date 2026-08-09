@@ -6,17 +6,23 @@ from apps.inventario.models import Armamento, Movimiento, Responsable
 @login_required
 def dashboard(request):
 
-    total_armamentos = Armamento.objects.count()
+    # Solo se cuentan armamentos activos
+    total_armamentos = Armamento.objects.filter(
+        activo=True
+    ).count()
 
     operables = Armamento.objects.filter(
+        activo=True,
         estado="OPERABLE"
     ).count()
 
     mantenimiento = Armamento.objects.filter(
+        activo=True,
         estado="MANTENIMIENTO"
     ).count()
 
     no_operables = Armamento.objects.filter(
+        activo=True,
         estado="NO_OPERABLE"
     ).count()
 
@@ -24,6 +30,8 @@ def dashboard(request):
         activo=True
     ).count()
 
+    # El historial sí incluye todos los movimientos,
+    # incluso los de armamentos dados de baja.
     ultimos_movimientos = (
         Movimiento.objects
         .select_related(
@@ -47,4 +55,3 @@ def dashboard(request):
         "dashboard/dashboard.html",
         context
     )
-    

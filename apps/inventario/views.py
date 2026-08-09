@@ -143,14 +143,18 @@ def eliminar_ubicacion(request, pk):
         }
     )
 #Armamento
+# Armamento
 @login_required
 def lista_armamentos(request):
 
     buscar = request.GET.get("buscar", "")
 
-    armamentos = Armamento.objects.all()
+    armamentos = Armamento.objects.filter(
+        activo=True
+    )
 
     if buscar:
+
         armamentos = armamentos.filter(
             Q(codigo__icontains=buscar) |
             Q(numero_serie__icontains=buscar) |
@@ -158,11 +162,16 @@ def lista_armamentos(request):
             Q(modelo__icontains=buscar)
         )
 
-    paginator = Paginator(armamentos, 10)
+    paginator = Paginator(
+        armamentos,
+        10
+    )
 
     page_number = request.GET.get("page")
 
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator.get_page(
+        page_number
+    )
 
     return render(
         request,
@@ -343,6 +352,7 @@ def editar_armamento(request, pk):
 
 @login_required
 @user_passes_test(es_administrador)
+@transaction.atomic
 def eliminar_armamento(request, pk):
 
     armamento = get_object_or_404(
@@ -352,11 +362,45 @@ def eliminar_armamento(request, pk):
 
     if request.method == "POST":
 
-        armamento.delete()
+        # Guardamos los datos actuales
+        estado_anterior = armamento.estado
+        ubicacion_anterior = armamento.ubicacion
+        responsable_anterior = armamento.responsable
+        duenio_anterior = armamento.duenio
+
+        # Baja lógica
+        armamento.activo = False
+
+        armamento.save(
+            update_fields=["activo"]
+        )
+
+        # Registrar la baja en movimientos
+        registrar_movimiento(
+
+            armamento=armamento,
+
+            tipo="BAJA",
+
+            usuario=request.user,
+
+            ubicacion_origen=ubicacion_anterior,
+            ubicacion_destino=ubicacion_anterior,
+
+            responsable_anterior=responsable_anterior,
+            responsable_nuevo=responsable_anterior,
+
+            estado_anterior=estado_anterior,
+            estado_nuevo=estado_anterior,
+
+            observacion=(
+                "Armamento dado de baja del inventario. "
+            )
+        )
 
         messages.success(
             request,
-            "Armamento eliminado correctamente."
+            "El armamento fue dado de baja correctamente."
         )
 
         return redirect("lista_armamentos")

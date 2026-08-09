@@ -286,6 +286,7 @@ class Movimiento(models.Model):
         ("CAMBIO_RESPONSABLE", "Cambio de responsable del armerillo"),
         ("CAMBIO_DUENIO", "Cambio de dueño"),
         ("NO_OPERABLE", "Marcar como No Operable"),
+        ("BAJA", "Dar de baja"),
     ]
 
     armamento = models.ForeignKey(
