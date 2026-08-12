@@ -19,10 +19,10 @@ Armamentos
 
         {% if request.user.groups.first.name == "Administrador" %}
 
-            <!-- <a href="{% url 'armamentos_inactivos' %}"
+            <a href="{% url 'armamentos_inactivos' %}"
                 class="btn btn-secondary">
                 🗃 Armamentos dados de baja
-            </a> -->
+            </a>
 
             <a href="{% url 'crear_armamento' %}"
                class="btn btn-primary">
