@@ -296,6 +296,8 @@ class Movimiento(models.Model):
 
     TIPOS = [
         ("INGRESO", "Ingreso"),
+        ("SALIDA", "Salida de armamento"),
+        ("ENTRADA", "Entrada de armamento"),
         ("CAMBIO_UBICACION", "Cambio de ubicación"),
         ("CAMBIO_RESPONSABLE", "Cambio de responsable del armerillo"),
         ("CAMBIO_DUENIO", "Cambio de dueño"),
@@ -377,6 +379,10 @@ class Movimiento(models.Model):
 
     fecha = models.DateTimeField(
         auto_now_add=True
+    )
+
+    registrado_qr = models.BooleanField(
+        default=False
     )
 
     observacion = models.TextField(

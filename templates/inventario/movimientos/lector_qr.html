@@ -1,0 +1,1068 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Lector QR
+{% endblock %}
+
+{% block contenido %}
+
+<div class="card shadow">
+
+    <div class="card-header">
+        <h4 class="mb-0">
+            Lector QR de Armamentos
+        </h4>
+    </div>
+
+    <div class="card-body text-center">
+
+        <!-- ==========================================
+             DESCRIPCIÓN
+        =========================================== -->
+
+        <p class="text-muted">
+            Apunte la cámara hacia el código QR del armamento.
+        </p>
+
+
+        <!-- ==========================================
+             LECTOR QR
+        =========================================== -->
+
+        <div
+            id="lector-qr"
+            style="
+                width: 100%;
+                max-width: 500px;
+                margin: auto;
+            "
+        ></div>
+
+
+        <!-- ==========================================
+             RESULTADO
+        =========================================== -->
+
+        <div
+            id="resultado"
+            class="mt-4"
+        ></div>
+
+
+        <!-- ==========================================
+             BOTÓN VOLVER A ESCANEAR
+        =========================================== -->
+
+        <div
+            id="boton-escanear"
+            class="mt-4"
+            style="display: none;"
+        >
+
+            <button
+                type="button"
+                class="btn btn-dark"
+                onclick="iniciarLector()"
+            >
+
+                Escanear otro armamento
+
+            </button>
+
+        </div>
+
+        <!-- ==========================================
+            BOTÓN REPORTE MOVIMIENTOS QR
+        =========================================== -->
+
+        <div class="mt-3">
+
+            <a
+                href="/inventario/movimientos/qr/reporte/"
+                target="_blank"
+                class="btn btn-primary"
+            >
+                Ver movimientos del día
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ==============================================
+     LIBRERÍA QR
+================================================ -->
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+
+<script>
+
+
+// =====================================================
+// VARIABLE DEL LECTOR
+// =====================================================
+
+let lector = null;
+
+let lectorActivo = false;
+
+
+// =====================================================
+// MOSTRAR MENSAJE
+// =====================================================
+
+function mostrarResultado(mensaje, tipo = "info") {
+
+    document.getElementById("resultado").innerHTML = `
+
+        <div class="alert alert-${tipo}">
+            ${mensaje}
+        </div>
+
+    `;
+
+}
+
+
+// =====================================================
+// MOSTRAR BOTÓN PARA ESCANEAR NUEVAMENTE
+// =====================================================
+
+function mostrarBotonEscanear() {
+
+    document.getElementById(
+        "boton-escanear"
+    ).style.display = "block";
+
+}
+
+
+// =====================================================
+// OCULTAR BOTÓN PARA ESCANEAR
+// =====================================================
+
+function ocultarBotonEscanear() {
+
+    document.getElementById(
+        "boton-escanear"
+    ).style.display = "none";
+
+}
+
+
+// =====================================================
+// QR DETECTADO
+// =====================================================
+
+function qrDetectado(codigoQR) {
+
+    console.log(
+        "QR detectado:",
+        codigoQR
+    );
+
+
+    // ==============================================
+    // DETENER LECTOR
+    // ==============================================
+
+    detenerLector();
+
+
+    mostrarResultado(
+        "Consultando información del armamento...",
+        "info"
+    );
+
+
+    ocultarBotonEscanear();
+
+
+    // ==============================================
+    // CONSULTAR ARMAMENTO
+    // ==============================================
+
+    fetch(
+        `/inventario/movimientos/qr/consultar/?codigo=${encodeURIComponent(codigoQR)}`
+    )
+
+    .then(response => {
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Error en la respuesta del servidor."
+            );
+
+        }
+
+        return response.json();
+
+    })
+
+    .then(data => {
+
+        console.log(
+            "Respuesta de Django:",
+            data
+        );
+
+
+        // ==========================================
+        // ARMAMENTO NO ENCONTRADO
+        // ==========================================
+
+        if (!data.encontrado) {
+
+            mostrarResultado(
+
+                `
+                <strong>Armamento no encontrado</strong>
+                <br>
+                ${data.mensaje}
+                `,
+
+                "danger"
+
+            );
+
+            mostrarBotonEscanear();
+
+            return;
+
+        }
+
+
+        // ==========================================
+        // DATOS DEL ARMAMENTO
+        // ==========================================
+
+        const arma =
+            data.armamento;
+
+
+        const accionPermitida =
+            data.accion_permitida;
+
+
+        // ==========================================
+        // DETERMINAR ACCIÓN
+        // ==========================================
+
+        let botonAccion = "";
+
+        let mensajeAccion = "";
+
+
+        if (
+            accionPermitida === "SALIDA"
+        ) {
+
+            botonAccion = `
+
+                <button
+                    type="button"
+                    class="btn btn-danger btn-lg"
+                    onclick="registrarMovimientoQR(
+                        '${arma.codigo}',
+                        'SALIDA'
+                    )"
+                >
+
+                    Registrar Salida
+
+                </button>
+
+            `;
+
+            mensajeAccion = `
+
+                <div class="alert alert-warning">
+
+                    <strong>
+                        Acción disponible:
+                    </strong>
+
+                    Registrar salida del armamento.
+
+                    <br>
+
+                    Este armamento actualmente
+                    se encuentra en el armerillo.
+
+                </div>
+
+            `;
+
+        }
+
+        else if (
+            accionPermitida === "ENTRADA"
+        ) {
+
+            botonAccion = `
+
+                <button
+                    type="button"
+                    class="btn btn-success btn-lg"
+                    onclick="registrarMovimientoQR(
+                        '${arma.codigo}',
+                        'ENTRADA'
+                    )"
+                >
+
+                    Registrar Entrada
+
+                </button>
+
+            `;
+
+            mensajeAccion = `
+
+                <div class="alert alert-info">
+
+                    <strong>
+                        Acción disponible:
+                    </strong>
+
+                    Registrar entrada del armamento.
+
+                    <br>
+
+                    Este armamento actualmente
+                    se encuentra fuera del armerillo.
+
+                </div>
+
+            `;
+
+        }
+
+        else {
+
+            botonAccion = `
+
+                <div class="alert alert-secondary">
+
+                    No existe una acción disponible
+                    para este armamento.
+
+                </div>
+
+            `;
+
+        }
+
+
+        // ==========================================
+        // MOSTRAR INFORMACIÓN
+        // ==========================================
+
+        document.getElementById(
+            "resultado"
+        ).innerHTML = `
+
+
+            <div class="card shadow mt-3">
+
+
+                <!-- ==================================
+                     ENCABEZADO
+                =================================== -->
+
+                <div
+                    class="card-header bg-success text-white"
+                >
+
+                    <h5 class="mb-0">
+
+                        Armamento encontrado
+
+                    </h5>
+
+                </div>
+
+
+                <!-- ==================================
+                     INFORMACIÓN
+                =================================== -->
+
+                <div class="card-body text-start">
+
+
+                    <p>
+
+                        <strong>
+                            Código:
+                        </strong>
+
+                        ${arma.codigo}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Número de serie:
+                        </strong>
+
+                        ${arma.numero_serie}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Tipo:
+                        </strong>
+
+                        ${arma.tipo}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Marca:
+                        </strong>
+
+                        ${arma.marca}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Modelo:
+                        </strong>
+
+                        ${arma.modelo}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Calibre:
+                        </strong>
+
+                        ${arma.calibre}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Dueño:
+                        </strong>
+
+                        ${arma.duenio}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Promoción:
+                        </strong>
+
+                        ${arma.promocion}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Ubicación:
+                        </strong>
+
+                        ${arma.ubicacion}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Responsable:
+                        </strong>
+
+                        ${arma.responsable}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Estado:
+                        </strong>
+
+                        ${arma.estado}
+
+                    </p>
+
+
+                    <hr>
+
+
+                    <!-- ==================================
+                         ACCIÓN DISPONIBLE
+                    =================================== -->
+
+                    <div class="text-center">
+
+                        <h6 class="mb-3">
+
+                            Acción disponible
+
+                        </h6>
+
+
+                        ${mensajeAccion}
+
+
+                        <div class="mt-3">
+
+                            ${botonAccion}
+
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        // ==========================================
+        // MOSTRAR BOTÓN ESCANEAR NUEVAMENTE
+        // ==========================================
+
+        mostrarBotonEscanear();
+
+    })
+
+    .catch(error => {
+
+        console.error(
+            "Error:",
+            error
+        );
+
+
+        mostrarResultado(
+
+            `
+            Ocurrió un error al consultar
+            el armamento.
+            `,
+
+            "danger"
+
+        );
+
+
+        mostrarBotonEscanear();
+
+    });
+
+}
+
+
+// =====================================================
+// INICIAR LECTOR
+// =====================================================
+
+function iniciarLector() {
+
+    console.log(
+        "Iniciando lector QR..."
+    );
+
+
+    ocultarBotonEscanear();
+
+
+    document.getElementById(
+        "resultado"
+    ).innerHTML = "";
+
+
+    // ==============================================
+    // CREAR LECTOR SI NO EXISTE
+    // ==============================================
+
+    if (!lector) {
+
+        lector = new Html5Qrcode(
+            "lector-qr"
+        );
+
+    }
+
+
+    const configuracion = {
+
+        fps: 10,
+
+        qrbox: {
+            width: 250,
+            height: 250
+        }
+
+    };
+
+
+    lector.start(
+
+        {
+            facingMode: "environment"
+        },
+
+        configuracion,
+
+        qrDetectado
+
+    )
+
+    .then(() => {
+
+        lectorActivo = true;
+
+        console.log(
+            "Lector QR iniciado."
+        );
+
+    })
+
+    .catch(error => {
+
+        console.error(
+            "Error al iniciar lector:",
+            error
+        );
+
+
+        mostrarResultado(
+
+            `
+            No fue posible acceder
+            a la cámara.
+
+            <br><br>
+
+            Verifique que el navegador
+            tenga permisos para utilizar
+            la cámara.
+            `,
+
+            "danger"
+
+        );
+
+
+        mostrarBotonEscanear();
+
+    });
+
+}
+
+
+// =====================================================
+// DETENER LECTOR
+// =====================================================
+
+function detenerLector() {
+
+    if (
+        lector &&
+        lectorActivo
+    ) {
+
+        lector.stop()
+
+        .then(() => {
+
+            lectorActivo = false;
+
+            console.log(
+                "Lector QR detenido."
+            );
+
+        })
+
+        .catch(error => {
+
+            console.error(
+                "Error al detener lector:",
+                error
+            );
+
+        });
+
+    }
+
+}
+
+
+// =====================================================
+// REGISTRAR ENTRADA / SALIDA
+// =====================================================
+
+function registrarMovimientoQR(
+    codigo,
+    tipo
+) {
+
+
+    // ==============================================
+    // MENSAJE
+    // ==============================================
+
+    const mensaje =
+
+        tipo === "ENTRADA"
+
+            ? "¿Desea registrar la entrada de este armamento?"
+
+            : "¿Desea registrar la salida de este armamento?";
+
+
+    // ==============================================
+    // CONFIRMACIÓN
+    // ==============================================
+
+    Swal.fire({
+
+        icon:
+            tipo === "ENTRADA"
+                ? "question"
+                : "warning",
+
+        title:
+
+            tipo === "ENTRADA"
+
+                ? "Registrar entrada"
+
+                : "Registrar salida",
+
+        text:
+            mensaje,
+
+        showCancelButton:
+            true,
+
+        confirmButtonText:
+
+            tipo === "ENTRADA"
+
+                ? "Sí, registrar entrada"
+
+                : "Sí, registrar salida",
+
+        cancelButtonText:
+            "Cancelar",
+
+        confirmButtonColor:
+
+            tipo === "ENTRADA"
+
+                ? "#198754"
+
+                : "#dc3545"
+
+    })
+
+
+    .then((result) => {
+
+
+        // ==========================================
+        // CANCELADO
+        // ==========================================
+
+        if (
+            !result.isConfirmed
+        ) {
+
+            return;
+
+        }
+
+
+        // ==========================================
+        // FORM DATA
+        // ==========================================
+
+        const datos =
+            new FormData();
+
+
+        datos.append(
+            "codigo",
+            codigo
+        );
+
+
+        datos.append(
+            "tipo",
+            tipo
+        );
+
+
+        // ==========================================
+        // ENVIAR A DJANGO
+        // ==========================================
+
+        fetch(
+
+            "{% url 'registrar_movimiento_qr' %}",
+
+            {
+
+                method:
+                    "POST",
+
+                headers: {
+
+                    "X-CSRFToken":
+                        obtenerCSRFToken()
+
+                },
+
+                body:
+                    datos
+
+            }
+
+        )
+
+
+        .then(response => {
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Error del servidor."
+                );
+
+            }
+
+            return response.json();
+
+        })
+
+
+        .then(data => {
+
+
+            // ======================================
+            // MOVIMIENTO REGISTRADO
+            // ======================================
+
+            if (data.ok) {
+
+
+                Swal.fire({
+
+                    icon:
+                        "success",
+
+                    title:
+                        "Movimiento registrado",
+
+                    text:
+                        data.mensaje,
+
+                    confirmButtonText:
+                        "Aceptar"
+
+                })
+
+
+                .then(() => {
+
+
+                    // ==================================
+                    // LIMPIAR INFORMACIÓN
+                    // ==================================
+
+                    document.getElementById(
+                        "resultado"
+                    ).innerHTML = `
+
+                        <div class="alert alert-success">
+
+                            <strong>
+                                Movimiento registrado correctamente.
+                            </strong>
+
+                            <br><br>
+
+                            Código:
+                            <strong>
+                                ${codigo}
+                            </strong>
+
+                            <br>
+
+                            Movimiento:
+                            <strong>
+                                ${
+                                    tipo === "SALIDA"
+                                        ? "Salida"
+                                        : "Entrada"
+                                }
+                            </strong>
+
+                        </div>
+
+                    `;
+
+
+                    // ==================================
+                    // MOSTRAR BOTÓN PARA ESCANEAR OTRO
+                    // ==================================
+
+                    mostrarBotonEscanear();
+
+                });
+
+            }
+
+
+            // ======================================
+            // ERROR DE VALIDACIÓN
+            // ======================================
+
+            else {
+
+
+                Swal.fire({
+
+                    icon:
+                        "warning",
+
+                    title:
+                        "No se pudo registrar",
+
+                    text:
+                        data.mensaje,
+
+                    confirmButtonText:
+                        "Aceptar"
+
+                });
+
+
+            }
+
+        })
+
+
+        .catch(error => {
+
+            console.error(
+                "Error:",
+                error
+            );
+
+
+            Swal.fire({
+
+                icon:
+                    "error",
+
+                title:
+                    "Error",
+
+                text:
+                    "Ocurrió un error al registrar el movimiento."
+
+            });
+
+        });
+
+    });
+
+}
+
+
+// =====================================================
+// OBTENER TOKEN CSRF
+// =====================================================
+
+function obtenerCSRFToken() {
+
+    const cookies =
+        document.cookie.split(";");
+
+
+    for (
+        let cookie of cookies
+    ) {
+
+
+        cookie =
+            cookie.trim();
+
+
+        if (
+            cookie.startsWith(
+                "csrftoken="
+            )
+        ) {
+
+
+            return decodeURIComponent(
+
+                cookie.substring(
+                    "csrftoken=".length
+                )
+
+            );
+
+        }
+
+    }
+
+
+    return "";
+
+}
+
+
+// =====================================================
+// INICIAR AUTOMÁTICAMENTE
+// =====================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        iniciarLector();
+
+    }
+);
+
+
+</script>
+
+{% endblock %}

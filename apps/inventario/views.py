@@ -2,9 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Ubicacion, Armamento, TipoArmamento, Responsable, Movimiento, Mantenimiento, Promocion, Alumno
 from .forms import UbicacionForm, ArmamentoForm, TipoArmamentoForm, ResponsableForm, MovimientoForm, MantenimientoForm, FinalizarMantenimientoForm, ReporteArmamentoForm, PromocionForm, AlumnoForm, ReporteAlumnoForm, ImportarMatrizAlumnosForm
 from django.contrib import messages
+from django.utils import timezone
+from datetime import datetime, time
 
 from django.core.paginator import Paginator
-from django.db.models import Q, Count
+from django.db.models import Q, Count, OuterRef, Subquery
 from django.db import transaction
 from openpyxl import load_workbook
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -144,24 +146,71 @@ def eliminar_ubicacion(request, pk):
         }
     )
 #Armamento
-# Armamento
 @login_required
 def lista_armamentos(request):
 
     buscar = request.GET.get("buscar", "")
+    promocion = request.GET.get("promocion")
 
-    armamentos = Armamento.objects.filter(
-        activo=True
+    ultimo_movimiento_qs = (
+        Movimiento.objects
+        .filter(
+            armamento=OuterRef("pk"),
+            tipo__in=["ENTRADA", "SALIDA"]
+        )
+        .order_by("-fecha")
     )
+
+    armamentos = (
+        Armamento.objects
+        .filter(activo=True)
+        .select_related(
+            "tipo",
+            "ubicacion",
+            "responsable",
+            "duenio",
+            "duenio__promocion",
+        )
+        .annotate(
+            ultimo_movimiento_qr=Subquery(
+                ultimo_movimiento_qs.values("tipo")[:1]
+            )
+        )
+    )
+
+    # ==========================
+    # FILTRO POR PROMOCIÓN
+    # ==========================
+
+    if promocion:
+
+        armamentos = armamentos.filter(
+            duenio__promocion_id=promocion
+        )
+
+    # ==========================
+    # BÚSQUEDA
+    # ==========================
 
     if buscar:
 
         armamentos = armamentos.filter(
+
             Q(codigo__icontains=buscar) |
+
             Q(numero_serie__icontains=buscar) |
+
             Q(marca__icontains=buscar) |
+
             Q(modelo__icontains=buscar)
+
         )
+
+    # ==========================
+    # PROMOCIONES
+    # ==========================
+
+    promociones = Promocion.objects.all()
 
     paginator = Paginator(
         armamentos,
@@ -180,6 +229,8 @@ def lista_armamentos(request):
         {
             "page_obj": page_obj,
             "buscar": buscar,
+            "promociones": promociones,
+            "promocion": promocion,
         }
     )
 #Armamento inactivo
@@ -2309,3 +2360,906 @@ def descargar_plantilla_matriz(request):
     workbook.save(respuesta)
 
     return respuesta
+
+#Lector QR
+import qrcode
+from io import BytesIO
+from django.http import HttpResponse
+from django.http import JsonResponse
+@login_required
+def lector_qr(request):
+    return render(
+        request,
+        "inventario/movimientos/lector_qr.html"
+    )
+
+@login_required
+def generar_qr_armamento(request, pk):
+
+    armamento = get_object_or_404(
+        Armamento,
+        pk=pk
+    )
+
+    qr = qrcode.QRCode(
+        version=1,
+        box_size=10,
+        border=4
+    )
+
+    qr.add_data(
+        armamento.codigo
+    )
+
+    qr.make(
+        fit=True
+    )
+
+    imagen = qr.make_image(
+        fill_color="black",
+        back_color="white"
+    )
+
+    buffer = BytesIO()
+
+    imagen.save(
+        buffer,
+        format="PNG"
+    )
+
+    buffer.seek(0)
+
+    return HttpResponse(
+        buffer.getvalue(),
+        content_type="image/png"
+    )
+
+@login_required
+def consultar_armamento_qr(request):
+
+    codigo = request.GET.get("codigo", "").strip()
+
+    if not codigo:
+        return JsonResponse({
+            "encontrado": False,
+            "mensaje": "No se recibió ningún código."
+        })
+
+    try:
+
+        armamento = Armamento.objects.select_related(
+            "tipo",
+            "duenio",
+            "duenio__promocion",
+            "ubicacion",
+            "responsable"
+        ).get(
+            codigo=codigo,
+            activo=True
+        )
+
+    except Armamento.DoesNotExist:
+
+        return JsonResponse({
+            "encontrado": False,
+            "mensaje": (
+                f"El armamento con código "
+                f"'{codigo}' no existe o se encuentra inactivo."
+            )
+        })
+
+    # =====================================================
+    # BUSCAR ÚLTIMO MOVIMIENTO DE ENTRADA / SALIDA
+    # =====================================================
+
+    ultimo_movimiento = (
+        Movimiento.objects
+        .filter(
+            armamento=armamento,
+            tipo__in=["ENTRADA", "SALIDA"]
+        )
+        .order_by("-fecha")
+        .first()
+    )
+
+    # =====================================================
+    # DETERMINAR ACCIÓN PERMITIDA
+    # =====================================================
+
+    if ultimo_movimiento is None:
+
+        # El arma nunca ha registrado una salida.
+        # Por lo tanto, la primera acción será SALIDA.
+
+        accion_permitida = "SALIDA"
+
+    elif ultimo_movimiento.tipo == "SALIDA":
+
+        # Si salió, ahora solamente puede entrar.
+
+        accion_permitida = "ENTRADA"
+
+    elif ultimo_movimiento.tipo == "ENTRADA":
+
+        # Si entró, ahora solamente puede salir.
+
+        accion_permitida = "SALIDA"
+
+    else:
+
+        accion_permitida = None
+
+    # =====================================================
+    # RESPUESTA
+    # =====================================================
+
+    return JsonResponse({
+
+        "encontrado": True,
+
+        "accion_permitida": accion_permitida,
+
+        "ultimo_movimiento": (
+            ultimo_movimiento.tipo
+            if ultimo_movimiento
+            else None
+        ),
+
+        "armamento": {
+
+            "id": armamento.id,
+
+            "codigo": armamento.codigo,
+
+            "numero_serie": armamento.numero_serie,
+
+            "tipo": str(armamento.tipo),
+
+            "marca": armamento.marca,
+
+            "modelo": armamento.modelo,
+
+            "calibre": armamento.calibre,
+
+            "estado": armamento.get_estado_display(),
+
+            "ubicacion": str(armamento.ubicacion),
+
+            "responsable": str(armamento.responsable),
+
+            "duenio": (
+                str(armamento.duenio)
+                if armamento.duenio
+                else "Sin dueño asignado"
+            ),
+
+            "promocion": (
+                str(armamento.duenio.promocion)
+                if armamento.duenio
+                and armamento.duenio.promocion
+                else "Sin promoción"
+            ),
+        }
+    })
+
+@login_required
+@transaction.atomic
+def registrar_movimiento_qr(request):
+
+    if request.method != "POST":
+        return JsonResponse({
+            "ok": False,
+            "mensaje": "Método no permitido."
+        }, status=405)
+
+    codigo = request.POST.get("codigo", "").strip()
+    tipo = request.POST.get("tipo", "").strip()
+
+    if tipo not in ["ENTRADA", "SALIDA"]:
+        return JsonResponse({
+            "ok": False,
+            "mensaje": "Tipo de movimiento no válido."
+        }, status=400)
+
+    try:
+
+        armamento = Armamento.objects.select_related(
+            "ubicacion",
+            "responsable",
+            "duenio",
+            "duenio__promocion",
+            "tipo"
+        ).get(
+            codigo=codigo,
+            activo=True
+        )
+
+    except Armamento.DoesNotExist:
+
+        return JsonResponse({
+            "ok": False,
+            "mensaje": (
+                f"El armamento '{codigo}' no existe "
+                "o se encuentra dado de baja."
+            )
+        }, status=404)
+
+    # ==========================================
+    # Último movimiento de entrada/salida
+    # ==========================================
+
+    ultimo_movimiento = (
+        Movimiento.objects
+        .filter(
+            armamento=armamento,
+            tipo__in=["ENTRADA", "SALIDA"]
+        )
+        .order_by("-fecha")
+        .first()
+    )
+
+    # ==========================================
+    # Determinar acción permitida
+    # ==========================================
+
+    if ultimo_movimiento:
+
+        if ultimo_movimiento.tipo == "SALIDA":
+            accion_permitida = "ENTRADA"
+
+        else:
+            accion_permitida = "SALIDA"
+
+    else:
+
+        # Nunca ha salido → la primera acción permitida es SALIDA
+        accion_permitida = "SALIDA"
+
+    # ==========================================
+    # Validar acción solicitada
+    # ==========================================
+
+    if tipo != accion_permitida:
+
+        if accion_permitida == "ENTRADA":
+
+            mensaje = (
+                "Este armamento se encuentra fuera del armerillo. "
+                "La siguiente acción permitida es registrar su ENTRADA."
+            )
+
+        else:
+
+            mensaje = (
+                "Este armamento se encuentra dentro del armerillo. "
+                "La siguiente acción permitida es registrar su SALIDA."
+            )
+
+        return JsonResponse({
+            "ok": False,
+            "mensaje": mensaje,
+            "accion_permitida": accion_permitida
+        }, status=400)
+
+    # ==========================================
+    # Crear movimiento
+    # ==========================================
+
+    Movimiento.objects.create(
+
+        armamento=armamento,
+
+        tipo=tipo,
+
+        ubicacion_origen=armamento.ubicacion,
+
+        ubicacion_destino=armamento.ubicacion,
+
+        responsable_anterior=armamento.responsable,
+
+        responsable_nuevo=armamento.responsable,
+
+        duenio_anterior=armamento.duenio,
+
+        duenio_nuevo=armamento.duenio,
+
+        estado_anterior=armamento.estado,
+
+        estado_nuevo=armamento.estado,
+
+        usuario=request.user,
+
+        registrado_qr=True,
+
+        observacion=(
+            "Movimiento registrado mediante lector QR."
+        )
+    )
+
+    # ==========================================
+    # Después de registrar:
+    # Entrada → siguiente será SALIDA
+    # Salida → siguiente será ENTRADA
+    # ==========================================
+
+    siguiente_accion = (
+        "ENTRADA"
+        if tipo == "SALIDA"
+        else
+        "SALIDA"
+    )
+
+    return JsonResponse({
+
+        "ok": True,
+
+        "mensaje": (
+            "Entrada registrada correctamente."
+            if tipo == "ENTRADA"
+            else
+            "Salida registrada correctamente."
+        ),
+
+        "tipo": tipo,
+
+        "codigo": armamento.codigo,
+
+        "siguiente_accion": siguiente_accion
+    })
+
+@login_required
+def movimientos_qr(request):
+
+    fecha = request.GET.get(
+        "fecha"
+    )
+
+    tipo = request.GET.get(
+        "tipo",
+        ""
+    )
+
+    # =====================================================
+    # FECHA POR DEFECTO
+    # =====================================================
+
+    if not fecha:
+
+        fecha = timezone.localdate().isoformat()
+
+    # =====================================================
+    # CONVERTIR FECHA
+    # =====================================================
+
+    try:
+
+        fecha_obj = datetime.strptime(
+            fecha,
+            "%Y-%m-%d"
+        ).date()
+
+    except ValueError:
+
+        fecha_obj = timezone.localdate()
+
+        fecha = fecha_obj.isoformat()
+
+    # =====================================================
+    # RANGO DEL DÍA
+    # =====================================================
+
+    inicio = timezone.make_aware(
+        datetime.combine(
+            fecha_obj,
+            time.min
+        )
+    )
+
+    fin = timezone.make_aware(
+        datetime.combine(
+            fecha_obj,
+            time.max
+        )
+    )
+
+    # =====================================================
+    # MOVIMIENTOS QR
+    # =====================================================
+
+    movimientos = (
+        Movimiento.objects
+        .filter(
+            registrado_qr=True,
+            fecha__gte=inicio,
+            fecha__lte=fin,
+            tipo__in=[
+                "ENTRADA",
+                "SALIDA"
+            ]
+        )
+        .select_related(
+            "armamento",
+            "usuario"
+        )
+        .order_by(
+            "-fecha"
+        )
+    )
+
+    # =====================================================
+    # FILTRO POR TIPO
+    # =====================================================
+
+    if tipo in [
+        "ENTRADA",
+        "SALIDA"
+    ]:
+
+        movimientos = movimientos.filter(
+            tipo=tipo
+        )
+
+    # =====================================================
+    # TOTALES
+    # =====================================================
+
+    total = movimientos.count()
+
+    total_entradas = movimientos.filter(
+        tipo="ENTRADA"
+    ).count()
+
+    total_salidas = movimientos.filter(
+        tipo="SALIDA"
+    ).count()
+
+    context = {
+
+        "movimientos": movimientos,
+
+        "fecha": fecha,
+
+        "tipo": tipo,
+
+        "total": total,
+
+        "total_entradas": total_entradas,
+
+        "total_salidas": total_salidas,
+
+    }
+
+    return render(
+        request,
+        "inventario/movimientos/movimientos_qr.html",
+        context
+    )
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import cm
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle
+)
+
+@login_required
+def reporte_movimientos_qr_pdf(request):
+
+    fecha = request.GET.get(
+        "fecha"
+    )
+
+    tipo = request.GET.get(
+        "tipo",
+        ""
+    )
+
+    # =====================================================
+    # FECHA
+    # =====================================================
+
+    if not fecha:
+
+        fecha_obj = timezone.localdate()
+
+        fecha = fecha_obj.isoformat()
+
+    else:
+
+        try:
+
+            fecha_obj = datetime.strptime(
+                fecha,
+                "%Y-%m-%d"
+            ).date()
+
+        except ValueError:
+
+            fecha_obj = timezone.localdate()
+
+            fecha = fecha_obj.isoformat()
+
+    # =====================================================
+    # RANGO DEL DÍA
+    # =====================================================
+
+    inicio = timezone.make_aware(
+        datetime.combine(
+            fecha_obj,
+            time.min
+        )
+    )
+
+    fin = timezone.make_aware(
+        datetime.combine(
+            fecha_obj,
+            time.max
+        )
+    )
+
+    # =====================================================
+    # MOVIMIENTOS QR
+    # =====================================================
+
+    movimientos = (
+        Movimiento.objects
+        .filter(
+            registrado_qr=True,
+            fecha__gte=inicio,
+            fecha__lte=fin,
+            tipo__in=[
+                "ENTRADA",
+                "SALIDA"
+            ]
+        )
+        .select_related(
+            "armamento",
+            "usuario"
+        )
+        .order_by(
+            "fecha"
+        )
+    )
+
+    # =====================================================
+    # FILTRO TIPO
+    # =====================================================
+
+    if tipo in [
+        "ENTRADA",
+        "SALIDA"
+    ]:
+
+        movimientos = movimientos.filter(
+            tipo=tipo
+        )
+
+    # =====================================================
+    # CONTADORES
+    # =====================================================
+
+    total = movimientos.count()
+
+    total_entradas = movimientos.filter(
+        tipo="ENTRADA"
+    ).count()
+
+    total_salidas = movimientos.filter(
+        tipo="SALIDA"
+    ).count()
+
+    # =====================================================
+    # RESPUESTA PDF
+    # =====================================================
+
+    response = HttpResponse(
+        content_type="application/pdf"
+    )
+
+    response[
+        "Content-Disposition"
+    ] = (
+        f'inline; filename="movimientos_qr_{fecha}.pdf"'
+    )
+
+    # =====================================================
+    # DOCUMENTO
+    # =====================================================
+
+    documento = SimpleDocTemplate(
+
+        response,
+
+        pagesize=A4,
+
+        rightMargin=1.5 * cm,
+
+        leftMargin=1.5 * cm,
+
+        topMargin=1.5 * cm,
+
+        bottomMargin=1.5 * cm,
+    )
+
+    estilos = getSampleStyleSheet()
+
+    elementos = []
+
+    # =====================================================
+    # TÍTULO
+    # =====================================================
+
+    elementos.append(
+        Paragraph(
+            "REPORTE DE MOVIMIENTOS QR",
+            estilos["Title"]
+        )
+    )
+
+    elementos.append(
+        Spacer(
+            1,
+            0.4 * cm
+        )
+    )
+
+    elementos.append(
+        Paragraph(
+            f"Fecha: {fecha_obj.strftime('%d/%m/%Y')}",
+            estilos["Normal"]
+        )
+    )
+
+    elementos.append(
+        Spacer(
+            1,
+            0.3 * cm
+        )
+    )
+
+    # =====================================================
+    # RESUMEN
+    # =====================================================
+
+    resumen = [
+
+        [
+            "Total movimientos",
+            "Entradas",
+            "Salidas"
+        ],
+
+        [
+            str(total),
+            str(total_entradas),
+            str(total_salidas)
+        ]
+
+    ]
+
+    tabla_resumen = Table(
+        resumen,
+        colWidths=[
+            5 * cm,
+            5 * cm,
+            5 * cm
+        ]
+    )
+
+    tabla_resumen.setStyle(
+        TableStyle([
+
+            (
+                "BACKGROUND",
+                (0, 0),
+                (-1, 0),
+                colors.HexColor("#212529")
+            ),
+
+            (
+                "TEXTCOLOR",
+                (0, 0),
+                (-1, 0),
+                colors.white
+            ),
+
+            (
+                "ALIGN",
+                (0, 0),
+                (-1, -1),
+                "CENTER"
+            ),
+
+            (
+                "GRID",
+                (0, 0),
+                (-1, -1),
+                0.5,
+                colors.grey
+            ),
+
+            (
+                "FONTNAME",
+                (0, 0),
+                (-1, 0),
+                "Helvetica-Bold"
+            ),
+
+            (
+                "BOTTOMPADDING",
+                (0, 0),
+                (-1, 0),
+                8
+            ),
+
+            (
+                "TOPPADDING",
+                (0, 0),
+                (-1, 0),
+                8
+            ),
+
+        ])
+    )
+
+    elementos.append(
+        tabla_resumen
+    )
+
+    elementos.append(
+        Spacer(
+            1,
+            0.6 * cm
+        )
+    )
+
+    # =====================================================
+    # TABLA DE MOVIMIENTOS
+    # =====================================================
+
+    datos = [
+
+        [
+            "Hora",
+            "Código",
+            "Serie",
+            "Movimiento",
+            "Usuario"
+        ]
+
+    ]
+
+    for movimiento in movimientos:
+
+        datos.append([
+
+            movimiento.fecha.strftime(
+                "%H:%M:%S"
+            ),
+
+            movimiento.armamento.codigo,
+
+            movimiento.armamento.numero_serie,
+
+            movimiento.get_tipo_display(),
+
+            str(movimiento.usuario),
+
+        ])
+
+    if len(datos) == 1:
+
+        datos.append([
+
+            "-",
+            "No existen movimientos",
+            "-",
+            "-",
+            "-"
+
+        ])
+
+    tabla = Table(
+
+        datos,
+
+        colWidths=[
+
+            2.3 * cm,
+            3.2 * cm,
+            3.2 * cm,
+            4 * cm,
+            4 * cm
+
+        ],
+
+        repeatRows=1
+    )
+
+    tabla.setStyle(
+        TableStyle([
+
+            (
+                "BACKGROUND",
+                (0, 0),
+                (-1, 0),
+                colors.HexColor("#212529")
+            ),
+
+            (
+                "TEXTCOLOR",
+                (0, 0),
+                (-1, 0),
+                colors.white
+            ),
+
+            (
+                "FONTNAME",
+                (0, 0),
+                (-1, 0),
+                "Helvetica-Bold"
+            ),
+
+            (
+                "GRID",
+                (0, 0),
+                (-1, -1),
+                0.5,
+                colors.grey
+            ),
+
+            (
+                "ALIGN",
+                (0, 0),
+                (-1, -1),
+                "CENTER"
+            ),
+
+            (
+                "VALIGN",
+                (0, 0),
+                (-1, -1),
+                "MIDDLE"
+            ),
+
+            (
+                "FONTSIZE",
+                (0, 0),
+                (-1, -1),
+                8
+            ),
+
+            (
+                "TOPPADDING",
+                (0, 0),
+                (-1, -1),
+                5
+            ),
+
+            (
+                "BOTTOMPADDING",
+                (0, 0),
+                (-1, -1),
+                5
+            ),
+
+        ])
+    )
+
+    elementos.append(
+        tabla
+    )
+
+    # =====================================================
+    # GENERAR PDF
+    # =====================================================
+
+    documento.build(
+        elementos
+    )
+
+    return response

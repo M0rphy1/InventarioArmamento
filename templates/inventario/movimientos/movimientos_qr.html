@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Movimientos QR
+{% endblock %}
+
+{% block contenido %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <h2>
+        Movimientos registrados por QR
+    </h2>
+
+    <a
+        href="{% url 'lector_qr' %}"
+        class="btn btn-dark"
+    >
+        Escanear QR
+    </a>
+
+</div>
+
+
+<!-- =====================================================
+     FILTROS
+===================================================== -->
+
+<div class="card shadow mb-4">
+
+    <div class="card-header">
+
+        <h5 class="mb-0">
+            Consultar movimientos
+        </h5>
+
+    </div>
+
+    <div class="card-body">
+
+        <form
+            method="GET"
+            class="row g-3 align-items-end"
+        >
+
+            <div class="col-md-4">
+
+                <label class="form-label">
+                    Fecha
+                </label>
+
+                <input
+                    type="date"
+                    name="fecha"
+                    class="form-control"
+                    value="{{ fecha }}"
+                >
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <label class="form-label">
+                    Tipo de movimiento
+                </label>
+
+                <select
+                    name="tipo"
+                    class="form-select"
+                >
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                    <option
+                        value="SALIDA"
+                        {% if tipo == "SALIDA" %}
+                            selected
+                        {% endif %}
+                    >
+                        Salidas
+                    </option>
+
+                    <option
+                        value="ENTRADA"
+                        {% if tipo == "ENTRADA" %}
+                            selected
+                        {% endif %}
+                    >
+                        Entradas
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Consultar
+                </button>
+
+                <a
+                    href="{% url 'reporte_movimientos_qr_pdf' %}?fecha={{ fecha }}{% if tipo %}&tipo={{ tipo }}{% endif %}"
+                    class="btn btn-danger"
+                    target="_blank"
+                >
+                    Generar PDF
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     RESUMEN
+===================================================== -->
+
+<div class="row mb-4">
+
+    <div class="col-md-4">
+
+        <div class="card shadow text-center">
+
+            <div class="card-body">
+
+                <h5>
+                    Total movimientos
+                </h5>
+
+                <h2>
+                    {{ total }}
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-4">
+
+        <div class="card shadow text-center">
+
+            <div class="card-body">
+
+                <h5>
+                    🟢 Entradas
+                </h5>
+
+                <h2 class="text-success">
+                    {{ total_entradas }}
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-md-4">
+
+        <div class="card shadow text-center">
+
+            <div class="card-body">
+
+                <h5>
+                    🔴 Salidas
+                </h5>
+
+                <h2 class="text-danger">
+                    {{ total_salidas }}
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     TABLA
+===================================================== -->
+
+<div class="card shadow">
+
+    <div class="card-header">
+
+        <h5 class="mb-0">
+
+            Movimientos del
+            {{ fecha }}
+
+        </h5>
+
+    </div>
+
+
+    <div class="card-body p-0">
+
+        <div class="table-responsive">
+
+            <table
+                class="table table-hover table-bordered mb-0 align-middle"
+            >
+
+                <thead class="table-dark">
+
+                    <tr>
+
+                        <th>
+                            Fecha y hora
+                        </th>
+
+                        <th>
+                            Código
+                        </th>
+
+                        <th>
+                            Número de serie
+                        </th>
+
+                        <th>
+                            Movimiento
+                        </th>
+
+                        <th>
+                            Usuario
+                        </th>
+
+                        <th>
+                            Observación
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for movimiento in movimientos %}
+
+                    <tr>
+
+                        <td>
+                            {{ movimiento.fecha|date:"d/m/Y H:i:s" }}
+                        </td>
+
+
+                        <td>
+                            <strong>
+                                {{ movimiento.armamento.codigo }}
+                            </strong>
+                        </td>
+
+
+                        <td>
+                            {{ movimiento.armamento.numero_serie }}
+                        </td>
+
+
+                        <td>
+
+                            {% if movimiento.tipo == "SALIDA" %}
+
+                                <span class="badge bg-danger">
+                                    🔴 SALIDA
+                                </span>
+
+                            {% elif movimiento.tipo == "ENTRADA" %}
+
+                                <span class="badge bg-success">
+                                    🟢 ENTRADA
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+                            {{ movimiento.usuario }}
+                        </td>
+
+
+                        <td>
+                            {{ movimiento.observacion }}
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="text-center py-4"
+                        >
+
+                            No existen movimientos QR
+                            registrados para esta fecha.
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -8,57 +8,162 @@ Armamentos
 
 <div class="d-flex justify-content-between align-items-center mb-4">
 
-    <h2>Armamentos</h2>
+    <h2>
+        Armamentos
+    </h2>
 
-    <a href="{% url 'reporte_armamentos' %}"
-    class="btn btn-primary">
+    <div class="d-flex gap-2">
 
-        Generar Reporte
+        <!-- REPORTE -->
 
-    </a>
+        <a
+            href="{% url 'reporte_armamentos' %}"
+            class="btn btn-primary"
+        >
+            Generar Reporte
+        </a>
+
+
+        <!-- LECTOR QR -->
+
+        <a
+            href="{% url 'lector_qr' %}"
+            class="btn btn-dark"
+        >
+            Escanear QR
+        </a>
+
 
         {% if request.user.groups.first.name == "Administrador" %}
 
-            <a href="{% url 'armamentos_inactivos' %}"
-                class="btn btn-secondary">
-                🗃 Armamentos dados de baja
+            <!-- ARMAMENTOS DADOS DE BAJA -->
+
+            <a
+                href="{% url 'armamentos_inactivos' %}"
+                class="btn btn-secondary"
+            >
+                Armamentos dados de baja
             </a>
 
-            <a href="{% url 'crear_armamento' %}"
-               class="btn btn-primary">
 
+            <!-- NUEVO ARMAMENTO -->
+
+            <a
+                href="{% url 'crear_armamento' %}"
+                class="btn btn-success"
+            >
                 Nuevo Armamento
-
             </a>
 
         {% endif %}
 
+    </div>
+
 </div>
 
-<form method="GET" class="row mb-3">
+
+<!-- =====================================================
+     FILTROS
+===================================================== -->
+
+<form
+    method="GET"
+    class="row mb-4"
+>
+
+    <!-- PROMOCIÓN -->
+
+    <div class="col-md-3">
+
+        <label class="form-label">
+            Promoción
+        </label>
+
+        <select
+            name="promocion"
+            class="form-select"
+            onchange="this.form.submit()"
+        >
+
+            <option value="">
+                Todas las promociones
+            </option>
+
+            {% for p in promociones %}
+
+                <option
+                    value="{{ p.id }}"
+                    {% if promocion == p.id|stringformat:"s" %}
+                        selected
+                    {% endif %}
+                >
+
+                    {{ p }}
+
+                </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+
+    <!-- BUSCADOR -->
 
     <div class="col-md-6">
+
+        <label class="form-label">
+            Buscar
+        </label>
 
         <input
             type="text"
             name="buscar"
             class="form-control"
             placeholder="Buscar por código, serie, marca o modelo..."
-            value="{{ buscar }}">
+            value="{{ buscar }}"
+        >
 
     </div>
 
-    <div class="col-md-2">
 
-        <button class="btn btn-primary">
+    <!-- BOTÓN BUSCAR -->
 
+    <div class="col-md-2 d-flex align-items-end">
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
             Buscar
-
         </button>
 
     </div>
 
+
+    <!-- LIMPIAR -->
+
+    <div class="col-md-1 d-flex align-items-end">
+
+        <a
+            href="{% url 'lista_armamentos' %}"
+            class="btn btn-outline-secondary"
+            title="Limpiar filtros"
+        >
+            Limpiar
+        </a>
+
+    </div>
+
 </form>
+
+
+<!-- =====================================================
+     TABLA
+===================================================== -->
+
+<div class="table-responsive">
 
 <table class="table table-hover table-bordered align-middle">
 
@@ -66,63 +171,161 @@ Armamentos
 
         <tr>
 
-            <th>Código</th>
-            <th>Serie</th>
-            <th>Tipo</th>
-            <th>Marca</th>
-            <th>Modelo</th>
-            <th>Dueño del fusil</th>
-            <th>Ubicación</th>
-            <th>Estado</th>
-            <th width="200">Acciones</th>
+            <th>
+                Código
+            </th>
+
+            <th>
+                Serie
+            </th>
+
+            <th>
+                Tipo
+            </th>
+
+            <th>
+                Marca
+            </th>
+
+            <th>
+                Modelo
+            </th>
+
+            <th>
+                Dueño del fusil
+            </th>
+
+            <th>
+                Ubicación
+            </th>
+
+            <th>
+                Estado
+            </th>
+
+            <th>
+                Situación
+            </th>
+
+            <th width="230">
+                Acciones
+            </th>
 
         </tr>
 
     </thead>
 
+
     <tbody>
 
     {% for armamento in page_obj %}
 
-        <tr>
+        <!-- =================================================
+             RESALTAR ARMAS QUE ESTÁN FUERA
+        ================================================== -->
 
-            <td>{{ armamento.codigo }}</td>
+        <tr
+            {% if armamento.ultimo_movimiento_qr == "SALIDA" %}
+                class="table-danger"
+            {% endif %}
+        >
 
-            <td>{{ armamento.numero_serie }}</td>
-
-            <td>{{ armamento.tipo }}</td>
-
-            <td>{{ armamento.marca }}</td>
-
-            <td>{{ armamento.modelo }}</td>
+            <!-- CÓDIGO -->
 
             <td>
-                {% if armamento.duenio %}
-                    {{ armamento.duenio }}
-                {% else %}
-                    <span class="text-danger">Sin asignar</span>
-                {% endif %}
+
+                <strong>
+                    {{ armamento.codigo }}
+                </strong>
+
             </td>
 
-            <td>{{ armamento.ubicacion }}</td>
+
+            <!-- SERIE -->
+
+            <td>
+                {{ armamento.numero_serie }}
+            </td>
+
+
+            <!-- TIPO -->
+
+            <td>
+                {{ armamento.tipo }}
+            </td>
+
+
+            <!-- MARCA -->
+
+            <td>
+                {{ armamento.marca }}
+            </td>
+
+
+            <!-- MODELO -->
+
+            <td>
+                {{ armamento.modelo }}
+            </td>
+
+
+            <!-- DUEÑO -->
+
+            <td>
+
+                {% if armamento.duenio %}
+
+                    {{ armamento.duenio }}
+
+                {% else %}
+
+                    <span class="text-danger">
+
+                        Sin asignar
+
+                    </span>
+
+                {% endif %}
+
+            </td>
+
+
+            <!-- UBICACIÓN -->
+
+            <td>
+
+                {{ armamento.ubicacion }}
+
+            </td>
+
+
+            <!-- ESTADO -->
 
             <td>
 
                 {% if armamento.estado == "OPERABLE" %}
 
-                    <span class="badge bg-warning text-dark">
+                    <span
+                        class="badge bg-warning text-dark"
+                    >
                         Operable
                     </span>
 
+
                 {% elif armamento.estado == "MANTENIMIENTO" %}
 
-                    <span class="badge bg-success">
+                    <span
+                        class="badge bg-success"
+                    >
                         Mantenimiento
                     </span>
 
+
                 {% elif armamento.estado == "NO_OPERABLE" %}
 
-                    <span class="badge bg-danger">
+                    <span
+                        class="badge bg-danger"
+                    >
                         No Operable
                     </span>
 
@@ -130,26 +333,85 @@ Armamentos
 
             </td>
 
+
+            <!-- =================================================
+                 SITUACIÓN QR
+            ================================================== -->
+
+            <td>
+
+                {% if armamento.ultimo_movimiento_qr == "SALIDA" %}
+
+                    <span
+                        class="badge bg-danger"
+                    >
+                        Fuera del armerillo
+                    </span>
+
+
+                {% else %}
+
+                    <span
+                        class="badge bg-success"
+                    >
+                        En armerillo
+                    </span>
+
+                {% endif %}
+
+            </td>
+
+
+            <!-- =================================================
+                 ACCIONES
+            ================================================== -->
+
             <td>
 
                 {% if request.user.groups.first.name == "Administrador" %}
 
-                    <a href="{% url 'editar_armamento' armamento.id %}"
-                    class="btn btn-warning btn-sm">
+                    <a
+                        href="{% url 'editar_armamento' armamento.id %}"
+                        class="btn btn-warning btn-sm"
+                        title="Editar armamento"
+                    >
                         Editar
                     </a>
 
                 {% endif %}
 
-                <a href="{% url 'historial_armamento' armamento.id %}"
-                class="btn btn-info btn-sm">
+
+                <!-- HISTORIAL -->
+
+                <a
+                    href="{% url 'historial_armamento' armamento.id %}"
+                    class="btn btn-info btn-sm"
+                    title="Ver historial"
+                >
                     Historial
                 </a>
 
+
+                <!-- QR -->
+
+                <a
+                    href="{% url 'generar_qr_armamento' armamento.pk %}"
+                    target="_blank"
+                    class="btn btn-outline-dark btn-sm"
+                    title="Generar código QR"
+                >
+                    QR
+                </a>
+
+
                 {% if request.user.groups.first.name == "Administrador" %}
 
-                    <a href="{% url 'eliminar_armamento' armamento.id %}"
-                    class="btn btn-danger btn-sm">
+                    <!-- DAR DE BAJA -->
+
+                    <a
+                        href="{% url 'eliminar_armamento' armamento.id %}"
+                        class="btn btn-danger btn-sm"
+                    >
                         Dar de Baja
                     </a>
 
@@ -159,13 +421,21 @@ Armamentos
 
         </tr>
 
+
     {% empty %}
 
         <tr>
 
-            <td colspan="8" class="text-center">
+            <td
+                colspan="10"
+                class="text-center py-4"
+            >
 
-                No existen armamentos registrados.
+                <span class="text-muted">
+
+                    No existen armamentos registrados.
+
+                </span>
 
             </td>
 
@@ -177,25 +447,41 @@ Armamentos
 
 </table>
 
+</div>
+
+
+<!-- =====================================================
+     PAGINACIÓN
+===================================================== -->
+
+{% if page_obj.paginator.num_pages > 1 %}
+
 <nav>
 
     <ul class="pagination justify-content-center">
 
+
+        <!-- ANTERIOR -->
+
         {% if page_obj.has_previous %}
 
-        <li class="page-item">
+            <li class="page-item">
 
-            <a
-                class="page-link"
-                href="?page={{ page_obj.previous_page_number }}&buscar={{ buscar }}">
+                <a
+                    class="page-link"
+                    href="?page={{ page_obj.previous_page_number }}&buscar={{ buscar }}&promocion={{ promocion }}"
+                >
 
-                Anterior
+                    Anterior
 
-            </a>
+                </a>
 
-        </li>
+            </li>
 
         {% endif %}
+
+
+        <!-- PÁGINA ACTUAL -->
 
         <li class="page-item active">
 
@@ -207,24 +493,31 @@ Armamentos
 
         </li>
 
+
+        <!-- SIGUIENTE -->
+
         {% if page_obj.has_next %}
 
-        <li class="page-item">
+            <li class="page-item">
 
-            <a
-                class="page-link"
-                href="?page={{ page_obj.next_page_number }}&buscar={{ buscar }}">
+                <a
+                    class="page-link"
+                    href="?page={{ page_obj.next_page_number }}&buscar={{ buscar }}&promocion={{ promocion }}"
+                >
 
-                Siguiente
+                    Siguiente
 
-            </a>
+                </a>
 
-        </li>
+            </li>
 
         {% endif %}
+
 
     </ul>
 
 </nav>
+
+{% endif %}
 
 {% endblock %}

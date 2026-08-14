@@ -275,4 +275,36 @@ urlpatterns = [
         views.armamentos_inactivos,
         name="armamentos_inactivos"
     ),
+#QR
+    path(
+        "movimientos/qr/",
+        views.lector_qr,
+        name="lector_qr"
+    ),
+    path(
+        "armamentos/<int:pk>/qr/",
+        views.generar_qr_armamento,
+        name="generar_qr_armamento"
+    ),
+    path(
+        "movimientos/qr/consultar/",
+        views.consultar_armamento_qr,
+        name="consultar_armamento_qr"
+    ),
+#Registrar movimiento QR
+    path(
+        "movimientos/qr/registrar/",
+        views.registrar_movimiento_qr,
+        name="registrar_movimiento_qr"
+    ),
+    path(
+        "movimientos/qr/historial/",
+        views.movimientos_qr,
+        name="movimientos_qr"
+    ),
+    path(
+        "movimientos/qr/reporte/",
+        views.reporte_movimientos_qr_pdf,
+        name="reporte_movimientos_qr_pdf"
+    ),
 ]
