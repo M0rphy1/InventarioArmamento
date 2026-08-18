@@ -307,4 +307,10 @@ urlpatterns = [
         views.reporte_movimientos_qr_pdf,
         name="reporte_movimientos_qr_pdf"
     ),
+#Modificaciones
+    path(
+        "movimientos/<int:movimiento_id>/pdf/",
+        views.reporte_movimiento_individual_pdf,
+        name="reporte_movimiento_individual_pdf"
+    ),
 ]

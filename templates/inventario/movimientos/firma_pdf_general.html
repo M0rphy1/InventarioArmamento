@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Firma - Reporte General
+{% endblock %}
+
+{% block contenido %}
+
+<div class="container">
+
+    <div class="card shadow">
+
+        <div class="card-header bg-dark text-white">
+
+            <h4 class="mb-0">
+                Datos de la firma
+            </h4>
+
+        </div>
+
+        <div class="card-body">
+
+            <p class="text-muted">
+                Ingrese los datos de la persona que firmará
+                el Reporte General de Movimientos.
+            </p>
+
+            {% if error %}
+
+                <div class="alert alert-danger">
+                    {{ error }}
+                </div>
+
+            {% endif %}
+
+            <form method="POST">
+
+                {% csrf_token %}
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Grado
+                    </label>
+
+                    <input
+                        type="text"
+                        name="firma_grado"
+                        class="form-control"
+                        placeholder="Ejemplo: Capitán"
+                        required
+                    >
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Nombres
+                    </label>
+
+                    <input
+                        type="text"
+                        name="firma_nombres"
+                        class="form-control"
+                        required
+                    >
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Apellidos
+                    </label>
+
+                    <input
+                        type="text"
+                        name="firma_apellidos"
+                        class="form-control"
+                        required
+                    >
+
+                </div>
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+                        Cargo
+                    </label>
+
+                    <input
+                        type="text"
+                        name="firma_cargo"
+                        class="form-control"
+                        placeholder="Ejemplo: Jefe Departamento Logística"
+                        required
+                    >
+
+                </div>
+
+                <div class="d-flex gap-2">
+
+                    <button
+                        type="submit"
+                        class="btn btn-danger"
+                    >
+                        Generar Reporte General
+                    </button>
+
+                    <a
+                        href="{% url 'lista_movimientos' %}"
+                        class="btn btn-secondary"
+                    >
+                        Cancelar
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

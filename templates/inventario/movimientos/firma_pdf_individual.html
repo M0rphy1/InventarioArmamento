@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+Datos para firma del PDF
+{% endblock %}
+
+{% block contenido %}
+
+<div class="container">
+
+    <div class="card shadow">
+
+        <div class="card-header bg-dark text-white">
+
+            <h4 class="mb-0">
+                Datos para generar PDF individual
+            </h4>
+
+        </div>
+
+        <div class="card-body">
+
+            <!-- ================================================= -->
+            <!-- INFORMACIÓN DEL MOVIMIENTO -->
+            <!-- ================================================= -->
+
+            <div class="alert alert-secondary">
+
+                <strong>Armamento:</strong>
+                {{ movimiento.armamento.codigo }}
+
+                <br>
+
+                <strong>Movimiento:</strong>
+                {{ movimiento.get_tipo_display }}
+
+                <br>
+
+                <strong>Fecha:</strong>
+                {{ movimiento.fecha|date:"d/m/Y H:i:s" }}
+
+            </div>
+
+
+            {% if error %}
+
+                <div class="alert alert-danger">
+
+                    {{ error }}
+
+                </div>
+
+            {% endif %}
+
+
+            <form method="POST">
+
+                {% csrf_token %}
+
+
+                <!-- ============================================= -->
+                <!-- FIRMA CENTRAL -->
+                <!-- ============================================= -->
+
+                <div class="card mb-4">
+
+                    <div class="card-header bg-primary text-white">
+
+                        <strong>
+                            Firma central
+                        </strong>
+
+                    </div>
+
+                    <div class="card-body">
+
+                        <p class="text-muted">
+
+                            Datos del responsable o Jefe del
+                            Departamento de Logística.
+
+                        </p>
+
+
+                        <div class="row">
+
+                            <div class="col-md-3 mb-3">
+
+                                <label class="form-label">
+                                    Grado
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="firma_grado"
+                                    class="form-control"
+                                    placeholder="Ej. Capitán"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="col-md-3 mb-3">
+
+                                <label class="form-label">
+                                    Nombres
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="firma_nombres"
+                                    class="form-control"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="col-md-3 mb-3">
+
+                                <label class="form-label">
+                                    Apellidos
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="firma_apellidos"
+                                    class="form-control"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <div class="col-md-3 mb-3">
+
+                                <label class="form-label">
+                                    Cargo
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="firma_cargo"
+                                    class="form-control"
+                                    placeholder="Ej. Jefe de Logística"
+                                    required
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                {% if es_cambio_responsable %}
+
+                    <!-- ========================================= -->
+                    <!-- CUSTODIO ENTREGA -->
+                    <!-- ========================================= -->
+
+                    <div class="card mb-4">
+
+                        <div class="card-header bg-warning">
+
+                            <strong>
+                                Custodio - Entrega
+                            </strong>
+
+                        </div>
+
+                        <div class="card-body">
+
+                            <p class="text-muted">
+
+                                Persona que entrega el armamento.
+
+                            </p>
+
+
+                            <div class="row">
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label class="form-label">
+                                        Grado
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="grado_entrega"
+                                        class="form-control"
+                                        required
+                                    >
+
+                                </div>
+
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label class="form-label">
+                                        Nombres
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="nombres_entrega"
+                                        class="form-control"
+                                        required
+                                    >
+
+                                </div>
+
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label class="form-label">
+                                        Apellidos
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="apellidos_entrega"
+                                        class="form-control"
+                                        required
+                                    >
+
+                                </div>
+
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label class="form-label">
+                                        Cargo
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="cargo_entrega"
+                                        class="form-control"
+                                        required
+                                    >
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ========================================= -->
+                    <!-- CUSTODIO RECIBE -->
+                    <!-- ========================================= -->
+
+                    <div class="card mb-4">
+
+                        <div class="card-header bg-success text-white">
+
+                            <strong>
+                                Custodio - Recibe
+                            </strong>
+
+                        </div>
+
+                        <div class="card-body">
+
+                            <p class="text-muted">
+
+                                Persona que recibe el armamento.
+
+                            </p>
+
+
+                            <div class="row">
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label class="form-label">
+                                        Grado
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="grado_recibe"
+                                        class="form-control"
+                                        required
+                                    >
+
+                                </div>
+
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label class="form-label">
+                                        Nombres
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="nombres_recibe"
+                                        class="form-control"
+                                        required
+                                    >
+
+                                </div>
+
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label class="form-label">
+                                        Apellidos
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="apellidos_recibe"
+                                        class="form-control"
+                                        required
+                                    >
+
+                                </div>
+
+
+                                <div class="col-md-3 mb-3">
+
+                                    <label class="form-label">
+                                        Cargo
+                                    </label>
+
+                                    <input
+                                        type="text"
+                                        name="cargo_recibe"
+                                        class="form-control"
+                                        required
+                                    >
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                {% endif %}
+
+
+                <!-- ============================================= -->
+                <!-- BOTONES -->
+                <!-- ============================================= -->
+
+                <div class="text-center mt-4">
+
+                    <button
+                        type="submit"
+                        class="btn btn-danger me-2"
+                    >
+
+                        📄 Generar PDF
+
+                    </button>
+
+
+                    <a
+                        href="{% url 'lista_movimientos' %}"
+                        class="btn btn-secondary"
+                    >
+
+                        Cancelar
+
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -722,17 +722,151 @@ def eliminar_responsable(request, pk):
 @login_required
 def lista_movimientos(request):
 
-    movimientos = Movimiento.objects.select_related(
-        "armamento",
-        "usuario"
-    ).order_by("-fecha")
+    # =====================================================
+    # FILTROS
+    # =====================================================
+
+    vista = request.GET.get(
+        "vista",
+        "todos"
+    )
+
+    tipo = request.GET.get(
+        "tipo",
+        ""
+    )
+
+    buscar = request.GET.get(
+        "buscar",
+        ""
+    ).strip()
+
+    # =====================================================
+    # CONSULTA BASE
+    # =====================================================
+
+    movimientos_qs = (
+        Movimiento.objects
+        .select_related(
+            "armamento",
+            "usuario",
+            "ubicacion_origen",
+            "ubicacion_destino",
+            "responsable_anterior",
+            "responsable_nuevo",
+            "duenio_anterior",
+            "duenio_nuevo",
+        )
+        .order_by("-fecha")
+    )
+
+    # =====================================================
+    # FILTRO PRINCIPAL
+    # =====================================================
+
+    if vista == "entradas_salidas":
+
+        movimientos_qs = movimientos_qs.filter(
+            tipo__in=[
+                "ENTRADA",
+                "SALIDA"
+            ]
+        )
+
+    elif vista == "administrativos":
+
+        movimientos_qs = movimientos_qs.exclude(
+            tipo__in=[
+                "ENTRADA",
+                "SALIDA"
+            ]
+        )
+
+    # =====================================================
+    # FILTRO ENTRADA / SALIDA
+    # =====================================================
+
+    if vista == "entradas_salidas":
+
+        if tipo in [
+            "ENTRADA",
+            "SALIDA"
+        ]:
+
+            movimientos_qs = movimientos_qs.filter(
+                tipo=tipo
+            )
+
+    # =====================================================
+    # BUSCAR ARMAMENTO
+    # =====================================================
+
+    if buscar:
+
+        movimientos_qs = movimientos_qs.filter(
+            Q(
+                armamento__codigo__icontains=buscar
+            )
+            |
+            Q(
+                armamento__numero_serie__icontains=buscar
+            )
+        )
+
+    # =====================================================
+    # CONTADORES
+    # =====================================================
+
+    total_entradas = (
+        Movimiento.objects
+        .filter(tipo="ENTRADA")
+        .count()
+    )
+
+    total_salidas = (
+        Movimiento.objects
+        .filter(tipo="SALIDA")
+        .count()
+    )
+
+    total_administrativos = (
+        Movimiento.objects
+        .exclude(
+            tipo__in=[
+                "ENTRADA",
+                "SALIDA"
+            ]
+        )
+        .count()
+    )
+
+    # =====================================================
+    # CONTEXT
+    # =====================================================
+
+    context = {
+
+        "movimientos": movimientos_qs,
+
+        "vista": vista,
+
+        "tipo": tipo,
+
+        "buscar": buscar,
+
+        "total_entradas": total_entradas,
+
+        "total_salidas": total_salidas,
+
+        "total_administrativos":
+            total_administrativos,
+
+    }
 
     return render(
         request,
         "inventario/movimientos/lista.html",
-        {
-            "movimientos": movimientos
-        }
+        context
     )
 
 @login_required
@@ -931,8 +1065,57 @@ def reporte_ubicaciones_pdf(request):
 def reporte_tipos_pdf(request):
     return generar_reporte_tipos_pdf(request)
 
+@login_required
 def reporte_movimientos_pdf(request):
-    return generar_reporte_movimientos_pdf(request)
+
+    if request.method == "POST":
+
+        grado = request.POST.get(
+            "firma_grado",
+            ""
+        ).strip()
+
+        nombres = request.POST.get(
+            "firma_nombres",
+            ""
+        ).strip()
+
+        apellidos = request.POST.get(
+            "firma_apellidos",
+            ""
+        ).strip()
+
+        cargo = request.POST.get(
+            "firma_cargo",
+            ""
+        ).strip()
+
+        if not grado or not nombres or not apellidos or not cargo:
+
+            return render(
+                request,
+                "inventario/movimientos/firma_pdf_general.html",
+                {
+                    "error": (
+                        "Todos los campos de la firma "
+                        "son obligatorios."
+                    )
+                }
+            )
+
+        return generar_reporte_movimientos_pdf(
+            request,
+            grado,
+            nombres,
+            apellidos,
+            cargo
+        )
+
+    return render(
+        request,
+        "inventario/movimientos/firma_pdf_general.html"
+    )
+
 
 def reporte_mantenimientos_pdf(request):
     return generar_reporte_mantenimientos_pdf(request)
@@ -3263,3 +3446,269 @@ def reporte_movimientos_qr_pdf(request):
     )
 
     return response
+
+# ============================================================
+# PDF INDIVIDUAL DE MOVIMIENTO
+# ============================================================
+
+from .reportes.reporte_movimiento_individual import (
+    generar_reporte_movimiento_individual_pdf
+)
+
+
+@login_required
+def reporte_movimiento_individual_pdf(request, movimiento_id):
+
+    try:
+
+        movimiento = (
+            Movimiento.objects
+            .select_related(
+                "armamento",
+                "usuario",
+                "ubicacion_origen",
+                "ubicacion_destino",
+                "responsable_anterior",
+                "responsable_nuevo",
+                "duenio_anterior",
+                "duenio_nuevo",
+            )
+            .get(
+                id=movimiento_id
+            )
+        )
+
+    except Movimiento.DoesNotExist:
+
+        return HttpResponse(
+            "El movimiento no existe.",
+            status=404
+        )
+
+    # ========================================================
+    # DETERMINAR SI ES CAMBIO DE RESPONSABLE
+    # ========================================================
+
+    es_cambio_responsable = (
+        movimiento.tipo == "CAMBIO_RESPONSABLE"
+    )
+
+    # ========================================================
+    # PROCESAR FORMULARIO
+    # ========================================================
+
+    if request.method == "POST":
+
+        # ----------------------------------------------------
+        # DATOS FIRMA CENTRAL
+        # ----------------------------------------------------
+
+        grado_jefe = request.POST.get(
+            "firma_grado",
+            ""
+        ).strip()
+
+        nombres_jefe = request.POST.get(
+            "firma_nombres",
+            ""
+        ).strip()
+
+        apellidos_jefe = request.POST.get(
+            "firma_apellidos",
+            ""
+        ).strip()
+
+        cargo_jefe = request.POST.get(
+            "firma_cargo",
+            ""
+        ).strip()
+
+        # ----------------------------------------------------
+        # VALIDAR FIRMA CENTRAL
+        # ----------------------------------------------------
+
+        if (
+            not grado_jefe
+            or not nombres_jefe
+            or not apellidos_jefe
+            or not cargo_jefe
+        ):
+
+            return render(
+                request,
+                "inventario/movimientos/firma_pdf_individual.html",
+                {
+                    "movimiento": movimiento,
+                    "es_cambio_responsable": es_cambio_responsable,
+                    "error": (
+                        "Debe completar todos los datos "
+                        "de la firma central."
+                    )
+                }
+            )
+
+        # ====================================================
+        # SI ES CAMBIO DE RESPONSABLE
+        # ====================================================
+
+        if es_cambio_responsable:
+
+            # ------------------------------------------------
+            # FIRMA CUSTODIO ENTREGA
+            # ------------------------------------------------
+
+            grado_entrega = request.POST.get(
+                "grado_entrega",
+                ""
+            ).strip()
+
+            nombres_entrega = request.POST.get(
+                "nombres_entrega",
+                ""
+            ).strip()
+
+            apellidos_entrega = request.POST.get(
+                "apellidos_entrega",
+                ""
+            ).strip()
+
+            cargo_entrega = request.POST.get(
+                "cargo_entrega",
+                ""
+            ).strip()
+
+            # ------------------------------------------------
+            # FIRMA CUSTODIO RECIBE
+            # ------------------------------------------------
+
+            grado_recibe = request.POST.get(
+                "grado_recibe",
+                ""
+            ).strip()
+
+            nombres_recibe = request.POST.get(
+                "nombres_recibe",
+                ""
+            ).strip()
+
+            apellidos_recibe = request.POST.get(
+                "apellidos_recibe",
+                ""
+            ).strip()
+
+            cargo_recibe = request.POST.get(
+                "cargo_recibe",
+                ""
+            ).strip()
+
+            # ------------------------------------------------
+            # VALIDAR CUSTODIO ENTREGA
+            # ------------------------------------------------
+
+            if (
+                not grado_entrega
+                or not nombres_entrega
+                or not apellidos_entrega
+                or not cargo_entrega
+            ):
+
+                return render(
+                    request,
+                    "inventario/movimientos/firma_pdf_individual.html",
+                    {
+                        "movimiento": movimiento,
+                        "es_cambio_responsable": True,
+                        "error": (
+                            "Debe completar todos los datos "
+                            "del custodio que entrega."
+                        )
+                    }
+                )
+
+            # ------------------------------------------------
+            # VALIDAR CUSTODIO RECIBE
+            # ------------------------------------------------
+
+            if (
+                not grado_recibe
+                or not nombres_recibe
+                or not apellidos_recibe
+                or not cargo_recibe
+            ):
+
+                return render(
+                    request,
+                    "inventario/movimientos/firma_pdf_individual.html",
+                    {
+                        "movimiento": movimiento,
+                        "es_cambio_responsable": True,
+                        "error": (
+                            "Debe completar todos los datos "
+                            "del custodio que recibe."
+                        )
+                    }
+                )
+
+            # ------------------------------------------------
+            # GENERAR PDF CON 3 FIRMAS
+            # ------------------------------------------------
+
+            return generar_reporte_movimiento_individual_pdf(
+
+                request=request,
+
+                movimiento=movimiento,
+
+                # Firma central
+                firma_grado=grado_jefe,
+                firma_nombres=nombres_jefe,
+                firma_apellidos=apellidos_jefe,
+                firma_cargo=cargo_jefe,
+
+                # Firma entrega
+                entrega_grado=grado_entrega,
+                entrega_nombres=nombres_entrega,
+                entrega_apellidos=apellidos_entrega,
+                entrega_cargo=cargo_entrega,
+
+                # Firma recibe
+                recibe_grado=grado_recibe,
+                recibe_nombres=nombres_recibe,
+                recibe_apellidos=apellidos_recibe,
+                recibe_cargo=cargo_recibe,
+
+                tres_firmas=True
+
+            )
+
+        # ====================================================
+        # OTROS MOVIMIENTOS: UNA FIRMA CENTRAL
+        # ====================================================
+
+        return generar_reporte_movimiento_individual_pdf(
+
+            request=request,
+
+            movimiento=movimiento,
+
+            firma_grado=grado_jefe,
+            firma_nombres=nombres_jefe,
+            firma_apellidos=apellidos_jefe,
+            firma_cargo=cargo_jefe,
+
+            tres_firmas=False
+
+        )
+
+    # ========================================================
+    # MOSTRAR FORMULARIO
+    # ========================================================
+
+    return render(
+        request,
+        "inventario/movimientos/firma_pdf_individual.html",
+        {
+            "movimiento": movimiento,
+            "es_cambio_responsable": es_cambio_responsable
+        }
+    )

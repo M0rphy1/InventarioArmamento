@@ -68,7 +68,12 @@ def encabezado_pie(canvas, doc):
 # GENERAR PDF
 # ==============================
 
-def generar_reporte_movimientos_pdf(request):
+def generar_reporte_movimientos_pdf(
+    request,
+    firma_grado,
+    firma_nombres,
+    firma_apellidos,
+    firma_cargo):
 
     response = HttpResponse(
         content_type="application/pdf"
@@ -278,6 +283,104 @@ def generar_reporte_movimientos_pdf(request):
     )
 
     elementos.append(tabla)
+
+    # ==============================
+    # FIRMA CENTRAL
+    # ==============================
+
+    elementos.append(
+        Spacer(
+            1,
+            1.5 * cm
+        )
+    )
+
+    nombre_firmante = (
+        f"{firma_grado} "
+        f"{firma_apellidos} "
+        f"{firma_nombres}"
+    ).strip()
+
+    datos_firma = [
+
+        [
+            ""
+        ],
+
+        [
+            nombre_firmante
+        ],
+
+        [
+            firma_cargo
+        ]
+
+    ]
+
+    tabla_firma = Table(
+        datos_firma,
+        colWidths=[
+            8 * cm
+        ],
+        rowHeights=[
+            1.2 * cm,
+            0.7 * cm,
+            0.6 * cm
+        ]
+    )
+
+    tabla_firma.setStyle(
+        TableStyle([
+
+            (
+                "ALIGN",
+                (0, 0),
+                (-1, -1),
+                "CENTER"
+            ),
+
+            (
+                "VALIGN",
+                (0, 0),
+                (-1, -1),
+                "MIDDLE"
+            ),
+
+            (
+                "LINEABOVE",
+                (0, 0),
+                (0, 0),
+                1,
+                colors.black
+            ),
+
+            (
+                "FONTNAME",
+                (0, 1),
+                (0, 1),
+                "Helvetica"
+            ),
+
+            (
+                "FONTNAME",
+                (0, 2),
+                (0, 2),
+                "Helvetica-Bold"
+            ),
+
+            (
+                "FONTSIZE",
+                (0, 1),
+                (0, 2),
+                9
+            ),
+
+        ])
+    )
+
+    elementos.append(
+        tabla_firma
+    )
 
     doc.build(
 

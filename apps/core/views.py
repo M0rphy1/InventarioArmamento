@@ -2,27 +2,29 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from apps.inventario.models import Armamento, Movimiento, Responsable
 
-# Create your views here.
+
 @login_required
 def dashboard(request):
 
-    # Solo se cuentan armamentos activos
-    total_armamentos = Armamento.objects.filter(
-        activo=True
-    ).count()
+    # ==========================================
+    # ARMAMENTOS ACTIVOS
+    # ==========================================
 
-    operables = Armamento.objects.filter(
-        activo=True,
+    armamentos_activos = Armamento.objects.filter(
+        activo=True
+    )
+
+    total_armamentos = armamentos_activos.count()
+
+    operables = armamentos_activos.filter(
         estado="OPERABLE"
     ).count()
 
-    mantenimiento = Armamento.objects.filter(
-        activo=True,
+    mantenimiento = armamentos_activos.filter(
         estado="MANTENIMIENTO"
     ).count()
 
-    no_operables = Armamento.objects.filter(
-        activo=True,
+    no_operables = armamentos_activos.filter(
         estado="NO_OPERABLE"
     ).count()
 
@@ -30,8 +32,22 @@ def dashboard(request):
         activo=True
     ).count()
 
-    # El historial sí incluye todos los movimientos,
-    # incluso los de armamentos dados de baja.
+
+    # ==========================================
+    # UBICACIÓN DE LOS ARMAMENTOS
+    # ==========================================
+
+    armamentos_armerillo = armamentos_activos.filter(
+        ubicacion__nombre__iexact="Armería Principal"
+    ).count()
+
+    armamentos_fuera = total_armamentos - armamentos_armerillo
+
+
+    # ==========================================
+    # ÚLTIMOS MOVIMIENTOS
+    # ==========================================
+
     ultimos_movimientos = (
         Movimiento.objects
         .select_related(
@@ -41,14 +57,24 @@ def dashboard(request):
         .order_by("-fecha")[:10]
     )
 
+
+    # ==========================================
+    # CONTEXTO
+    # ==========================================
+
     context = {
         "total_armamentos": total_armamentos,
         "operables": operables,
         "mantenimiento": mantenimiento,
         "no_operables": no_operables,
         "responsables": responsables,
+
+        "armamentos_armerillo": armamentos_armerillo,
+        "armamentos_fuera": armamentos_fuera,
+
         "ultimos_movimientos": ultimos_movimientos,
     }
+
 
     return render(
         request,
